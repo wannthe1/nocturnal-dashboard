@@ -1,4 +1,6 @@
 import { redirect } from "next/navigation";
+import { can } from "@/lib/roles";
+import { LiveUpdates } from "./live-updates";
 import { Suspense } from "react";
 import { getCurrentUser } from "@/lib/auth";
 import { signOut } from "@/app/login/actions";
@@ -19,10 +21,11 @@ export default function DashboardLayout({ children }: LayoutProps<"/">) {
 
 // Reads the language first, so the menu is never shown in the wrong one.
 async function Shell({ children }: { children: React.ReactNode }) {
-  const [{ locale, messages }, { role }] = await Promise.all([getI18n(), getCurrentUser()]);
+  const [{ locale, messages }, { id, role }] = await Promise.all([getI18n(), getCurrentUser()]);
   if (!role) redirect("/no-access");
   return (
     <I18nProvider locale={locale} messages={messages}>
+      <LiveUpdates userId={id} watchesTeam={can(role, "team")} />
       <div className="min-h-screen lg:flex">
         <Sidebar role={role} />
         <div className="min-w-0 flex-1">
