@@ -801,3 +801,6 @@ revoke execute on function public.clear_login_failures(text) from public, anon, 
 grant execute on function public.login_lock_seconds(text) to service_role;
 grant execute on function public.record_login_failure(text) to service_role;
 grant execute on function public.clear_login_failures(text) to service_role;
+
+-- Tells Supabase's API to pick up the new tables straight away.
+notify pgrst, 'reload schema';
