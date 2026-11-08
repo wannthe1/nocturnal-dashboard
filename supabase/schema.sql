@@ -820,12 +820,306 @@ begin
      or v_restaurant not in (select public.my_restaurants('admin')) then
     raise exception 'not_allowed';
   end if;
+  update public.employees set active = false where user_id = p_user;
   delete from auth.users where id = p_user;
 end;
 $$;
 
 revoke execute on function public.remove_team_member(uuid) from public, anon;
 grant execute on function public.remove_team_member(uuid) to authenticated;
+
+-- ---- Employees: shifts, attendance, performance and the activity log ----
+
+-- One record per person, kept even after their login is deleted so that attendance
+-- and performance history survives. Created automatically when someone joins a team.
+create table if not exists public.employees (
+  id            uuid primary key default gen_random_uuid(),
+  restaurant_id uuid not null references public.restaurants (id) on delete cascade,
+  user_id       uuid unique references auth.users (id) on delete set null,
+  name          text not null check (char_length(name) between 1 and 120),
+  active        boolean not null default true,
+  created_at    timestamptz not null default now(),
+  unique (id, restaurant_id)
+);
+create index if not exists employees_restaurant_idx on public.employees (restaurant_id);
+
+create or replace function public.sync_employee()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  insert into public.employees (restaurant_id, user_id, name)
+  select new.restaurant_id, new.user_id, coalesce(nullif(trim(u.raw_user_meta_data ->> 'display_name'), ''), new.email)
+  from auth.users u where u.id = new.user_id
+  on conflict (user_id) do update set restaurant_id = excluded.restaurant_id, active = true;
+  return null;
+end;
+$$;
+revoke execute on function public.sync_employee() from public, anon, authenticated;
+
+drop trigger if exists team_member_employee on public.team_members;
+create trigger team_member_employee
+  after insert on public.team_members
+  for each row execute function public.sync_employee();
+
+-- People who were already on a team.
+insert into public.employees (restaurant_id, user_id, name)
+select t.restaurant_id, t.user_id, coalesce(nullif(trim(u.raw_user_meta_data ->> 'display_name'), ''), t.email)
+from public.team_members t join auth.users u on u.id = t.user_id
+on conflict (user_id) do nothing;
+
+-- Keeps the employee's name in step with the name they choose for themselves.
+create or replace function public.sync_employee_name()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  update public.employees set name = trim(new.raw_user_meta_data ->> 'display_name')
+  where user_id = new.id and nullif(trim(new.raw_user_meta_data ->> 'display_name'), '') is not null;
+  return null;
+end;
+$$;
+revoke execute on function public.sync_employee_name() from public, anon, authenticated;
+
+drop trigger if exists on_auth_user_name_changed on auth.users;
+create trigger on_auth_user_name_changed
+  after update of raw_user_meta_data on auth.users
+  for each row
+  when (old.raw_user_meta_data ->> 'display_name' is distinct from new.raw_user_meta_data ->> 'display_name')
+  execute function public.sync_employee_name();
+
+create or replace function public.my_employee_ids()
+returns setof uuid
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select id from public.employees where user_id = (select auth.uid());
+$$;
+revoke execute on function public.my_employee_ids() from public, anon;
+grant execute on function public.my_employee_ids() to authenticated;
+
+-- Times are the restaurant's local clock. An end time before the start means the
+-- shift finishes the next day.
+create table if not exists public.shifts (
+  id            uuid primary key default gen_random_uuid(),
+  restaurant_id uuid not null references public.restaurants (id) on delete cascade,
+  employee_id   uuid not null,
+  shift_date    date not null,
+  start_time    time not null,
+  end_time      time not null,
+  note          text check (char_length(note) <= 200),
+  created_at    timestamptz not null default now(),
+  check (start_time <> end_time),
+  foreign key (employee_id, restaurant_id) references public.employees (id, restaurant_id) on delete cascade
+);
+create index if not exists shifts_restaurant_date_idx on public.shifts (restaurant_id, shift_date);
+create index if not exists shifts_employee_date_idx on public.shifts (employee_id, shift_date);
+
+create table if not exists public.attendance (
+  id            uuid primary key default gen_random_uuid(),
+  restaurant_id uuid not null references public.restaurants (id) on delete cascade,
+  employee_id   uuid not null,
+  clock_in      timestamp not null,
+  clock_out     timestamp,
+  created_at    timestamptz not null default now(),
+  check (clock_out is null or clock_out > clock_in),
+  foreign key (employee_id, restaurant_id) references public.employees (id, restaurant_id) on delete cascade
+);
+create index if not exists attendance_restaurant_in_idx on public.attendance (restaurant_id, clock_in);
+create unique index if not exists attendance_one_open_idx on public.attendance (employee_id) where clock_out is null;
+
+create table if not exists public.performance_reviews (
+  id            uuid primary key default gen_random_uuid(),
+  restaurant_id uuid not null references public.restaurants (id) on delete cascade,
+  employee_id   uuid not null,
+  review_date   date not null,
+  rating        integer not null check (rating between 1 and 5),
+  notes         text check (char_length(notes) <= 1000),
+  created_at    timestamptz not null default now(),
+  foreign key (employee_id, restaurant_id) references public.employees (id, restaurant_id) on delete cascade
+);
+create index if not exists reviews_restaurant_date_idx on public.performance_reviews (restaurant_id, review_date);
+
+-- Written only by the database itself, so nobody can edit or remove an entry.
+create table if not exists public.activity_log (
+  id            bigint generated always as identity primary key,
+  restaurant_id uuid not null references public.restaurants (id) on delete cascade,
+  actor_id      uuid,
+  actor_name    text,
+  action        text not null check (action in ('insert', 'update', 'delete', 'sign_in')),
+  entity        text not null,
+  detail        text,
+  created_at    timestamptz not null default now()
+);
+create index if not exists activity_restaurant_time_idx on public.activity_log (restaurant_id, created_at desc);
+
+alter table public.employees enable row level security;
+alter table public.shifts enable row level security;
+alter table public.attendance enable row level security;
+alter table public.performance_reviews enable row level security;
+alter table public.activity_log enable row level security;
+
+drop policy if exists "See own record or manage staff" on public.employees;
+create policy "See own record or manage staff"
+  on public.employees for select to authenticated
+  using (user_id = (select auth.uid()) or restaurant_id in (select public.my_restaurants('admin', 'hr')));
+
+drop policy if exists "See own shifts" on public.shifts;
+create policy "See own shifts"
+  on public.shifts for select to authenticated
+  using (employee_id in (select public.my_employee_ids()));
+drop policy if exists "Managers run shifts" on public.shifts;
+create policy "Managers run shifts"
+  on public.shifts for all to authenticated
+  using (restaurant_id in (select public.my_restaurants('admin', 'hr')))
+  with check (restaurant_id in (select public.my_restaurants('admin', 'hr')));
+
+drop policy if exists "See own attendance" on public.attendance;
+create policy "See own attendance"
+  on public.attendance for select to authenticated
+  using (employee_id in (select public.my_employee_ids()));
+drop policy if exists "Managers run attendance" on public.attendance;
+create policy "Managers run attendance"
+  on public.attendance for all to authenticated
+  using (restaurant_id in (select public.my_restaurants('admin', 'hr')))
+  with check (restaurant_id in (select public.my_restaurants('admin', 'hr')));
+
+drop policy if exists "Managers run reviews" on public.performance_reviews;
+create policy "Managers run reviews"
+  on public.performance_reviews for all to authenticated
+  using (restaurant_id in (select public.my_restaurants('admin', 'hr')))
+  with check (restaurant_id in (select public.my_restaurants('admin', 'hr')));
+
+drop policy if exists "Admins read the activity log" on public.activity_log;
+create policy "Admins read the activity log"
+  on public.activity_log for select to authenticated
+  using (restaurant_id in (select public.my_restaurants('admin')));
+
+-- Clocking in and out uses the server's clock, so staff can't choose the time.
+-- The browser only says which time zone the restaurant's clock is in.
+create or replace function public.clock_in(p_tz text)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_employee public.employees;
+  v_tz text := 'UTC';
+begin
+  select * into v_employee from public.employees where user_id = (select auth.uid()) and active;
+  if not found then
+    raise exception 'no_employee';
+  end if;
+  if exists (select 1 from pg_catalog.pg_timezone_names where name = p_tz) then
+    v_tz := p_tz;
+  end if;
+  insert into public.attendance (restaurant_id, employee_id, clock_in)
+  values (v_employee.restaurant_id, v_employee.id, now() at time zone v_tz);
+exception when unique_violation then
+  raise exception 'already_clocked_in';
+end;
+$$;
+revoke execute on function public.clock_in(text) from public, anon;
+grant execute on function public.clock_in(text) to authenticated;
+
+create or replace function public.clock_out(p_tz text)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_tz text := 'UTC';
+begin
+  if exists (select 1 from pg_catalog.pg_timezone_names where name = p_tz) then
+    v_tz := p_tz;
+  end if;
+  update public.attendance
+  set clock_out = greatest(now() at time zone v_tz, clock_in + interval '1 second')
+  where clock_out is null and employee_id in (select public.my_employee_ids());
+  if not found then
+    raise exception 'not_clocked_in';
+  end if;
+end;
+$$;
+revoke execute on function public.clock_out(text) from public, anon;
+grant execute on function public.clock_out(text) to authenticated;
+
+create or replace function public.log_activity()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_row jsonb;
+  v_restaurant uuid;
+  v_actor uuid := (select auth.uid());
+  v_actor_name text;
+  v_employee text;
+begin
+  if tg_op = 'DELETE' then v_row := to_jsonb(old); else v_row := to_jsonb(new); end if;
+  if tg_op = 'UPDATE' and to_jsonb(old) = to_jsonb(new) then return null; end if;
+  -- Rows from a CSV import are covered by the one entry for the import itself.
+  if v_row ->> 'import_id' is not null then return null; end if;
+  v_restaurant := (v_row ->> 'restaurant_id')::uuid;
+  -- The whole restaurant is being deleted, so there's nowhere to record this.
+  if not exists (select 1 from public.restaurants where id = v_restaurant) then return null; end if;
+  if v_row ? 'employee_id' then
+    select name into v_employee from public.employees where id = (v_row ->> 'employee_id')::uuid;
+  end if;
+  select coalesce(nullif(trim(raw_user_meta_data ->> 'display_name'), ''), email) into v_actor_name
+  from auth.users where id = v_actor;
+
+  insert into public.activity_log (restaurant_id, actor_id, actor_name, action, entity, detail)
+  values (v_restaurant, v_actor, v_actor_name, lower(tg_op), tg_table_name, concat_ws(' · ',
+    v_employee,
+    coalesce(v_row ->> 'description', v_row ->> 'name', v_row ->> 'file_name', v_row ->> 'email', v_row ->> 'menu_item'),
+    v_row ->> 'role', v_row ->> 'shift_date', v_row ->> 'rating'));
+  return null;
+end;
+$$;
+revoke execute on function public.log_activity() from public, anon, authenticated;
+
+do $$
+declare
+  v_table text;
+begin
+  foreach v_table in array array['expenses', 'inventory_items', 'recipe_lines', 'imports', 'team_members',
+                                 'team_invitations', 'shifts', 'attendance', 'performance_reviews'] loop
+    execute format('drop trigger if exists log_activity on public.%I', v_table);
+    execute format('create trigger log_activity after insert or update or delete on public.%I
+                    for each row execute function public.log_activity()', v_table);
+  end loop;
+end $$;
+
+create or replace function public.log_sign_in()
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_restaurant uuid;
+  v_name text;
+begin
+  select public.my_restaurants() into v_restaurant limit 1;
+  if v_restaurant is null then return; end if;
+  select coalesce(nullif(trim(raw_user_meta_data ->> 'display_name'), ''), email) into v_name
+  from auth.users where id = (select auth.uid());
+  insert into public.activity_log (restaurant_id, actor_id, actor_name, action, entity)
+  values (v_restaurant, (select auth.uid()), v_name, 'sign_in', 'session');
+end;
+$$;
+revoke execute on function public.log_sign_in() from public, anon;
+grant execute on function public.log_sign_in() to authenticated;
 
 -- Lets open dashboards hear about role changes and removals as they happen.
 do $$
@@ -839,3 +1133,6 @@ end $$;
 
 -- Tells Supabase's API to pick up the new tables straight away.
 notify pgrst, 'reload schema';
+
+-- Shows a result in the SQL Editor, confirming this version of the file ran.
+select 'Up to date' as status, to_regclass('public.employees') as employees_table, to_regclass('public.activity_log') as activity_table;

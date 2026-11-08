@@ -55,6 +55,9 @@ export async function signIn(_prev: AuthState, formData: FormData): Promise<Auth
   }
 
   await clearFailures(key);
+  after(async () => {
+    await supabase.rpc("log_sign_in");
+  });
   revalidatePath("/", "layout");
   redirect(data.user.user_metadata?.display_name ? "/" : "/welcome");
 }

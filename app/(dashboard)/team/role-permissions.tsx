@@ -24,6 +24,11 @@ const ROWS: { page: MessageKey; access: (role: Role) => MessageKey | null }[] = 
   },
   { page: "nav.reports", access: (r) => (can(r, "reports") ? "perm.view" : null) },
   { page: "nav.team", access: (r) => (can(r, "manageTeam") ? "perm.manage" : can(r, "team") ? "perm.view" : null) },
+  { page: "nav.schedule", access: (r) => (can(r, "schedule") ? "perm.clock" : null) },
+  { page: "team.tab.shifts", access: (r) => (can(r, "team") ? "perm.edit" : null) },
+  { page: "team.tab.attendance", access: (r) => (can(r, "team") ? "perm.edit" : null) },
+  { page: "team.tab.performance", access: (r) => (can(r, "team") ? "perm.edit" : null) },
+  { page: "team.tab.activity", access: (r) => (can(r, "activity") ? "perm.view" : null) },
 ];
 
 export function RolePermissions() {

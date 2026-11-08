@@ -14,7 +14,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default function TeamPage() {
   return (
-    <div className="mx-auto max-w-4xl">
+    <div>
       <Suspense fallback={<FormSkeleton fields={2} />}>
         <Team />
       </Suspense>
