@@ -1,0 +1,5 @@
+order_id,date,time,item,category,quantity,unit_price,channel,payment_method,branch
+A-1001,2026-11-01,12:15,Classic Smash Burger,Burgers,2,11.50,dine_in,card,
+A-1001,2026-11-01,12:15,Fries,Sides,2,4.50,dine_in,card,
+A-1002,2026-11-01,19:40,Korean Chicken Bowl,Bowls,1,13.90,delivery,mobile,
+A-1003,2026-11-02,13:05,Veggie Burger,Burgers,1,11.90,takeaway,cash,
