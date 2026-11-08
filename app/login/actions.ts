@@ -41,7 +41,7 @@ export async function signIn(_prev: AuthState, formData: FormData): Promise<Auth
   if (waiting > 0) return { lockedUntil: Date.now() + waiting * 1000, values };
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) {
     if (error.code === "invalid_credentials") {
       const lock = await recordFailure(key);
@@ -56,7 +56,7 @@ export async function signIn(_prev: AuthState, formData: FormData): Promise<Auth
 
   await clearFailures(key);
   revalidatePath("/", "layout");
-  redirect("/");
+  redirect(data.user.user_metadata?.display_name ? "/" : "/welcome");
 }
 
 export async function signUp(_prev: AuthState, formData: FormData): Promise<AuthState> {
@@ -86,7 +86,7 @@ export async function signUp(_prev: AuthState, formData: FormData): Promise<Auth
   if (!data.session) {
     return { message: t("login.checkInbox") };
   }
-  redirect("/");
+  redirect("/welcome");
 }
 
 export async function signOut() {

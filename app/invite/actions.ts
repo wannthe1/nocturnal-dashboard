@@ -30,7 +30,7 @@ export async function signUpWithInvite(token: string, _prev: InviteFormState, fo
   if (!data.session) return { message: t("login.checkInbox") };
 
   revalidatePath("/", "layout");
-  redirect("/");
+  redirect("/welcome");
 }
 
 // For someone already signed in with no restaurant, e.g. removed and invited back.

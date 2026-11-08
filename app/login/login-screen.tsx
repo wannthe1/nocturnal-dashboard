@@ -6,9 +6,18 @@ import { LanguageMenu, ThemeToggle } from "@/components/preferences";
 import { useI18n } from "@/lib/i18n/client";
 import { LoginForm } from "./login-form";
 
-// The whole sign-in screen. Signing out shows this same screen the moment the
-// button is pressed, so the page swap that follows can't be seen.
+// The sign-in screen. Signing out shows this same screen the moment the button
+// is pressed, so the page swap that follows can't be seen.
 export function LoginScreen() {
+  return (
+    <AuthLayout>
+      <LoginForm />
+    </AuthLayout>
+  );
+}
+
+// The brand banner and card shared by the sign-in and welcome screens.
+export function AuthLayout({ children }: { children: React.ReactNode }) {
   const { t } = useI18n();
   return (
     <main className="grid min-h-screen lg:grid-cols-2">
@@ -40,7 +49,7 @@ export function LoginScreen() {
             <LogoMark className="h-20 w-auto" />
             <Wordmark className="mt-4 text-sm" />
           </div>
-          <LoginForm />
+          {children}
           <div className="mt-10 text-center">
             <p className="text-xs text-faint">
               © 2026 Nocturnal Tech · <Link href="/privacy" className="transition-colors hover:text-ink">{t("login.privacy")}</Link>

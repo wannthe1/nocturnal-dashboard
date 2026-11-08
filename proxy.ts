@@ -36,6 +36,7 @@ export async function proxy(request: NextRequest) {
   // Verifies the session token (and refreshes it if it's about to expire).
   const { data } = await supabase.auth.getClaims();
   const signedIn = Boolean(data?.claims);
+  const needsName = signedIn && !data?.claims?.user_metadata?.display_name;
 
   const path = request.nextUrl.pathname;
   const isPublic = PUBLIC_PATHS.some((p) => path === p || path.startsWith(`${p}/`));
@@ -44,6 +45,13 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
   if (signedIn && path === "/login") {
+    return NextResponse.redirect(new URL(needsName ? "/welcome" : "/", request.url));
+  }
+  // Giving a name is the step between signing in and the dashboard.
+  if (needsName && !isPublic && path !== "/welcome") {
+    return NextResponse.redirect(new URL("/welcome", request.url));
+  }
+  if (signedIn && !needsName && path === "/welcome") {
     return NextResponse.redirect(new URL("/", request.url));
   }
 
