@@ -479,7 +479,7 @@ export const zh: Messages = {
   "team.you": "（您）",
   "team.role": "角色",
   "team.remove": "移除",
-  "team.removeQuestion": "将 {name} 移出团队？对方将立即失去访问权限。",
+  "team.removeQuestion": "移除 {name} 并永久删除其账号？对方将立即失去访问权限。之后可以再次邀请同一邮箱。",
   "team.invite": "邀请成员",
   "team.inviteNote": "选择对方可查看的内容，然后发送链接。对方会创建自己的登录账号，您的密码不会外泄。链接仅可使用一次，7 天后失效。",
   "team.create": "创建邀请链接",

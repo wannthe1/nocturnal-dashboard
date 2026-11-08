@@ -802,6 +802,31 @@ grant execute on function public.login_lock_seconds(text) to service_role;
 grant execute on function public.record_login_failure(text) to service_role;
 grant execute on function public.clear_login_failures(text) to service_role;
 
+-- Removing someone deletes their login completely, so the same email can be
+-- invited again. Only admins can do it, only for people on their own team. The
+-- owner isn't a team member, so the owner's account can never be deleted here.
+create or replace function public.remove_team_member(p_user uuid)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_restaurant uuid;
+begin
+  select restaurant_id into v_restaurant from public.team_members where user_id = p_user;
+  if v_restaurant is null
+     or p_user = (select auth.uid())
+     or v_restaurant not in (select public.my_restaurants('admin')) then
+    raise exception 'not_allowed';
+  end if;
+  delete from auth.users where id = p_user;
+end;
+$$;
+
+revoke execute on function public.remove_team_member(uuid) from public, anon;
+grant execute on function public.remove_team_member(uuid) to authenticated;
+
 -- Lets open dashboards hear about role changes and removals as they happen.
 do $$
 begin

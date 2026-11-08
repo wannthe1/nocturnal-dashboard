@@ -479,7 +479,7 @@ export const en = {
   "team.you": "(you)",
   "team.role": "Role",
   "team.remove": "Remove",
-  "team.removeQuestion": "Remove {name} from the team? They'll lose access straight away.",
+  "team.removeQuestion": "Remove {name} and permanently delete their account? They'll lose access straight away. You can invite the same email again later.",
   "team.invite": "Invite someone",
   "team.inviteNote": "Choose what they can see, then send them the link. They create their own login, so your password stays private. The link works once and expires in 7 days.",
   "team.create": "Create invite link",

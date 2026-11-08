@@ -24,8 +24,9 @@ async function Invite({ params }: { params: PageProps<"/invite/[token]">["params
   const [{ t, locale, messages }, supabase] = await Promise.all([getI18n(), createClient()]);
   const { data: details } = await supabase.rpc("invite_details", { p_token: token });
   const invite = details as { restaurant: string; role: string } | null;
-  const { data: session } = await supabase.auth.getClaims();
-  const signedIn = Boolean(session?.claims);
+  // Asks Supabase directly: a deleted account may still have an old login in this browser.
+  const { data: session } = await supabase.auth.getUser();
+  const signedIn = Boolean(session.user);
   // Each person belongs to one restaurant, so an account that has one can't join another.
   const { data: existing } = signedIn ? await supabase.from("restaurants").select("id").maybeSingle() : { data: null };
 

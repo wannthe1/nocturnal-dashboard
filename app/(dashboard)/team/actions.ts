@@ -52,6 +52,6 @@ export async function removeMember(userId: string) {
   const { id, role } = await getVerifiedUser();
   if (!can(role, "manageTeam") || userId === id) return;
   const supabase = await createClient();
-  await supabase.from("team_members").delete().eq("user_id", userId);
+  await supabase.rpc("remove_team_member", { p_user: userId });
   revalidatePath("/", "layout");
 }
