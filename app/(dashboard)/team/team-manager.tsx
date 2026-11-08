@@ -11,6 +11,7 @@ import { useI18n } from "@/lib/i18n/client";
 import { labelFor } from "@/lib/i18n/config";
 import { ROLES, type Role } from "@/lib/roles";
 import type { Invite, Member } from "@/lib/team";
+import { RolePermissions } from "./role-permissions";
 import { cancelInvite, changeRole, createInvite, removeMember, type InviteState } from "./actions";
 
 export function TeamManager({
@@ -111,6 +112,8 @@ export function TeamManager({
           )}
         </>
       )}
+
+      <RolePermissions />
 
       <ConfirmDialog
         open={removing !== null}
