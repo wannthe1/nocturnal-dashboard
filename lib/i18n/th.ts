@@ -599,6 +599,12 @@ export const th: Messages = {
   "schedule.noRecord": "การลงเวลาสำหรับสมาชิกทีม บัญชีเจ้าของไม่มีข้อมูลพนักงาน",
   "schedule.err": "บันทึกไม่สำเร็จ กรุณารีเฟรชแล้วลองอีกครั้ง",
 
+  "time.choose": "เลือกเวลา",
+  "time.hour": "ชั่วโมง",
+  "time.minute": "นาที",
+  "time.clear": "ล้าง",
+  "time.done": "เสร็จ",
+
   "notFound.title": "ไม่พบหน้านี้",
   "notFound.body": "ลิงก์อาจหมดอายุ หรือรายการที่ลิงก์ไปถึงอาจถูกลบแล้ว",
   "notFound.home": "ไปที่แดชบอร์ด",

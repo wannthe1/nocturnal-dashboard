@@ -5,6 +5,7 @@ import { ConfirmDialog } from "@/components/confirm-dialog";
 import { DateField } from "@/components/date-picker";
 import { Field } from "@/components/form-field";
 import { Select } from "@/components/select";
+import { TimeField } from "@/components/time-field";
 import { useI18n } from "@/lib/i18n/client";
 import type { Employee } from "@/lib/employee-stats";
 import { addAttendance, addReview, addShift, type StaffFormState } from "./staff-actions";
@@ -41,10 +42,10 @@ function DateInput({ today }: { today: string }) {
   );
 }
 
-function TimeInput({ label, name, required = true }: { label: string; name: string; required?: boolean }) {
+function TimeInput({ label, name, defaultValue, optional }: { label: string; name: string; defaultValue?: string; optional?: boolean }) {
   return (
     <Field label={label} htmlFor={`staff-${name}`}>
-      <input id={`staff-${name}`} name={name} type="time" required={required} className="field tabular-nums" />
+      <TimeField id={`staff-${name}`} name={name} defaultValue={defaultValue} optional={optional} />
     </Field>
   );
 }
@@ -55,8 +56,8 @@ export function ShiftForm({ employees, today }: { employees: Employee[]; today: 
     <FormShell action={addShift} label={t("shifts.add")}>
       <EmployeeField employees={employees} />
       <DateInput today={today} />
-      <TimeInput label={t("staff.start")} name="start" />
-      <TimeInput label={t("staff.end")} name="end" />
+      <TimeInput label={t("staff.start")} name="start" defaultValue="09:00" />
+      <TimeInput label={t("staff.end")} name="end" defaultValue="17:00" />
     </FormShell>
   );
 }
@@ -67,8 +68,8 @@ export function AttendanceForm({ employees, today }: { employees: Employee[]; to
     <FormShell action={addAttendance} label={t("attendance.add")}>
       <EmployeeField employees={employees} />
       <DateInput today={today} />
-      <TimeInput label={t("attendance.in")} name="in" />
-      <TimeInput label={t("attendance.out")} name="out" required={false} />
+      <TimeInput label={t("attendance.in")} name="in" defaultValue="09:00" />
+      <TimeInput label={t("attendance.out")} name="out" optional />
     </FormShell>
   );
 }

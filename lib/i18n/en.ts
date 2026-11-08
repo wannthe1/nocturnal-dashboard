@@ -599,6 +599,12 @@ export const en = {
   "schedule.noRecord": "Clock-in is for team members. The owner account has no employee record.",
   "schedule.err": "Couldn't record this. Please refresh and try again.",
 
+  "time.choose": "Choose a time",
+  "time.hour": "Hour",
+  "time.minute": "Minute",
+  "time.clear": "Clear",
+  "time.done": "Done",
+
   "notFound.title": "This page doesn't exist",
   "notFound.body": "The link may be out of date, or the item it pointed to may have been deleted.",
   "notFound.home": "Go to the dashboard",

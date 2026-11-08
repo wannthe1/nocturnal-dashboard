@@ -599,6 +599,12 @@ export const zh: Messages = {
   "schedule.noRecord": "打卡仅限团队成员。所有者账号没有员工记录。",
   "schedule.err": "无法记录，请刷新后重试。",
 
+  "time.choose": "选择时间",
+  "time.hour": "小时",
+  "time.minute": "分钟",
+  "time.clear": "清除",
+  "time.done": "完成",
+
   "notFound.title": "此页面不存在",
   "notFound.body": "链接可能已过期，或其指向的内容已被删除。",
   "notFound.home": "返回仪表板",
