@@ -53,7 +53,7 @@ async function Invite({ params }: { params: PageProps<"/invite/[token]">["params
           <LanguageMenu />
           <ThemeToggle />
         </div>
-        <div className="rise w-full max-w-sm">
+        <div className="card rise w-full max-w-sm p-6 sm:p-8">
           <div className="mb-10 flex flex-col items-center text-ink">
             <LogoMark className="h-20 w-auto" />
             <Wordmark className="mt-4 text-sm" />

@@ -13,7 +13,7 @@ export function Topbar({ account }: { account: React.ReactNode }) {
   const current = NAV_ITEMS.find((item) => isActive(item.href, pathname));
 
   return (
-    <header className="sticky top-0 z-30 bg-canvas/80 backdrop-blur-md">
+    <header className="sticky top-0 z-30 bg-[var(--chrome)] backdrop-blur-xl">
       <div className="mx-auto flex max-w-[1400px] items-center justify-between gap-3 px-4 py-3.5 sm:px-6 lg:px-8 lg:py-5">
         <div className="flex min-w-0 items-center gap-3">
           <MenuButton />

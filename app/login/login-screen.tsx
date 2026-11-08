@@ -15,10 +15,10 @@ export function LoginScreen() {
       {/* Brand banner (hidden on small screens) */}
       <section
         className="night relative hidden flex-col items-center justify-center overflow-hidden p-12 lg:flex"
-        style={{ background: "radial-gradient(40rem 26rem at 50% 38%, rgb(101 126 255 / 0.3), transparent 70%), linear-gradient(160deg, #0b0d12, #141a33)" }}
+        style={{ background: "radial-gradient(40rem 26rem at 50% 38%, rgb(255 255 255 / 0.18), transparent 70%), linear-gradient(160deg, #050505, #1e1e20)" }}
       >
         <div className="flex flex-col items-center text-center">
-          <LogoMark twinkle className="h-52 w-auto drop-shadow-[0_0_34px_rgb(101_126_255/0.45)]" />
+          <LogoMark twinkle className="h-52 w-auto drop-shadow-[0_0_34px_rgb(255_255_255/0.3)]" />
           <Wordmark className="mt-8 text-2xl" />
           <p className="mt-10 text-3xl font-semibold leading-tight">
             {t("login.headline1")}
@@ -35,7 +35,7 @@ export function LoginScreen() {
           <LanguageMenu />
           <ThemeToggle />
         </div>
-        <div className="w-full max-w-sm">
+        <div className="card w-full max-w-sm p-6 sm:p-8">
           <div className="mb-10 flex flex-col items-center text-ink lg:hidden">
             <LogoMark className="h-20 w-auto" />
             <Wordmark className="mt-4 text-sm" />

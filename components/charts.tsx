@@ -180,15 +180,15 @@ export function TrendCard({
                   strokeWidth={2}
                   fill={`url(#trend-wash-${metric})`}
                   dot={false}
-                  activeDot={{ r: 5, fill: color, stroke: "var(--surface)", strokeWidth: 2 }}
+                  activeDot={{ r: 5, fill: color, stroke: "var(--canvas)", strokeWidth: 2 }}
                   {...motion(animate)}
                 />
                 {/* The one value worth labelling directly: the highest point. */}
                 {peak && data.length > 2 && (
-                  <ReferenceDot x={peak.period} y={peak[metric]} r={4} fill={color} stroke="var(--surface)" strokeWidth={2} label={{ value: fmtShort(peak[metric]), position: "top", fill: "var(--muted)", fontSize: 12, fontWeight: 600 }} />
+                  <ReferenceDot x={peak.period} y={peak[metric]} r={4} fill={color} stroke="var(--canvas)" strokeWidth={2} label={{ value: fmtShort(peak[metric]), position: "top", fill: "var(--muted)", fontSize: 12, fontWeight: 600 }} />
                 )}
                 {/* A hollow dot marks a period that isn't finished. */}
-                {last && lastIncomplete && <ReferenceDot x={last.period} y={last[metric]} r={5} fill="var(--surface)" stroke={color} strokeWidth={2} />}
+                {last && lastIncomplete && <ReferenceDot x={last.period} y={last[metric]} r={5} fill="var(--canvas)" stroke={color} strokeWidth={2} />}
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -448,7 +448,7 @@ export function RevenueProfitChart({ data, currency, empty }: { data: MonthPoint
             <Bar dataKey="revenue" radius={[6, 6, 0, 0]} maxBarSize={24} {...motion(animate)}>
               {data.map((d) => <Cell key={d.month} fill={METRIC_COLORS.revenue} fillOpacity={d.partial ? 0.35 : 0.75} />)}
             </Bar>
-            <Line type="monotone" dataKey="profit" stroke={METRIC_COLORS.profit} strokeWidth={2} dot={{ r: 3, fill: METRIC_COLORS.profit, strokeWidth: 0 }} activeDot={{ r: 5, stroke: "var(--surface)", strokeWidth: 2 }} {...motion(animate)} />
+            <Line type="monotone" dataKey="profit" stroke={METRIC_COLORS.profit} strokeWidth={2} dot={{ r: 3, fill: METRIC_COLORS.profit, strokeWidth: 0 }} activeDot={{ r: 5, stroke: "var(--canvas)", strokeWidth: 2 }} {...motion(animate)} />
           </ComposedChart>
         </ResponsiveContainer>
       </div>

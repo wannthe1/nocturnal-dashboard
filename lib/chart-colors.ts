@@ -1,6 +1,7 @@
 // One colour per thing, on every chart. A metric, expense category or channel
 // always has the same colour, wherever it's drawn and however the list is sorted.
-// The colours are theme variables, checked for colour-blind separation.
+// The colours are theme variables, in greys. Every chart also names what it shows,
+// so nothing depends on telling two shades apart.
 
 export const METRIC_COLORS = {
   revenue: "var(--cat-1)",

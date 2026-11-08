@@ -1,11 +1,10 @@
 // The Nocturnal Tech logo with plain styles, for generated images (the favicon,
 // home-screen icon and social share card), where Tailwind isn't available.
 export const BRAND = {
-  obsidian: "#0B0D12",
-  midnight: "#171C26",
-  silver: "#C5CAD3",
-  moon: "#F7F8FA",
-  electric: "#657EFF",
+  obsidian: "#050505",
+  midnight: "#161618",
+  silver: "#C8C8CC",
+  moon: "#F5F5F7",
 };
 
 const CRESCENT = "M50 21.6A44.6 44.6 0 1 0 82.5 96.7A41.74 41.74 0 1 1 50 21.6Z";

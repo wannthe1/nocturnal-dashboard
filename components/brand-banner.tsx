@@ -13,7 +13,7 @@ export function BrandBanner({ eyebrow, title, line }: { eyebrow: string; title: 
       className="night rise relative overflow-hidden rounded-[1.5rem]"
       style={{
         background:
-          "radial-gradient(34rem 20rem at 82% 42%, rgb(101 126 255 / 0.34), transparent 70%), linear-gradient(115deg, #0b0d12 0%, #12172a 60%, #1a2244 100%)",
+          "radial-gradient(34rem 20rem at 82% 42%, rgb(255 255 255 / 0.2), transparent 70%), linear-gradient(115deg, #050505 0%, #141416 60%, #2a2a2d 100%)",
       }}
     >
       <svg className="absolute inset-0 h-full w-full" aria-hidden="true">
@@ -23,7 +23,7 @@ export function BrandBanner({ eyebrow, title, line }: { eyebrow: string; title: 
             cx={`${x}%`}
             cy={`${y}%`}
             r={r}
-            fill="#F7F8FA"
+            fill="#F5F5F7"
             opacity={0.7}
             className={i % 3 === 0 ? "twinkle" : undefined}
             style={i % 3 === 0 ? { animationDelay: `${i * 0.4}s` } : undefined}
@@ -38,7 +38,7 @@ export function BrandBanner({ eyebrow, title, line }: { eyebrow: string; title: 
           <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted">{line}</p>
         </div>
         <div className="hidden shrink-0 flex-col items-center gap-3 sm:flex">
-          <LogoMark twinkle className="h-20 w-auto drop-shadow-[0_0_24px_rgb(101_126_255/0.45)]" />
+          <LogoMark twinkle className="h-20 w-auto drop-shadow-[0_0_24px_rgb(255_255_255/0.3)]" />
           <Wordmark className="text-[0.82rem]" />
         </div>
         <LogoMark twinkle className="h-16 w-auto shrink-0 sm:hidden" />

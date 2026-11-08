@@ -64,7 +64,7 @@ function SignOutButton({ label }: { label: string }) {
         <LogOutIcon />
         {label}
       </button>
-      {pending && createPortal(<div inert className="fixed inset-0 z-[100] overflow-y-auto bg-canvas"><LoginScreen /></div>, document.body)}
+      {pending && createPortal(<div inert className="page-backdrop fixed inset-0 z-[100] overflow-y-auto"><LoginScreen /></div>, document.body)}
     </>
   );
 }

@@ -17,7 +17,7 @@ export default function OpenGraphImage() {
           alignItems: "center",
           justifyContent: "space-between",
           padding: 90,
-          background: `radial-gradient(800px 500px at 85% 40%, #1c2650, ${BRAND.obsidian})`,
+          background: `radial-gradient(800px 500px at 85% 40%, #2a2a2d, ${BRAND.obsidian})`,
           color: BRAND.moon,
           fontFamily: "sans-serif",
         }}
@@ -25,7 +25,7 @@ export default function OpenGraphImage() {
         <div style={{ display: "flex", flexDirection: "column" }}>
           <div style={{ fontSize: 40, letterSpacing: 16 }}>NOCTURNAL TECH</div>
           <div style={{ marginTop: 56, fontSize: 68, fontWeight: 600, lineHeight: 1.12 }}>Sales, stock and spending.</div>
-          <div style={{ fontSize: 68, fontWeight: 600, lineHeight: 1.12, color: BRAND.electric }}>One clear view.</div>
+          <div style={{ fontSize: 68, fontWeight: 600, lineHeight: 1.12, color: BRAND.silver }}>One clear view.</div>
         </div>
         <BrandGlyph size={380} lineWidth={1.6} />
       </div>

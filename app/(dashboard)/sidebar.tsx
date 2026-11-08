@@ -78,7 +78,7 @@ export function Sidebar({ role }: { role: Role }) {
       <button type="button" onClick={close} aria-label={t("nav.close")} tabIndex={open ? 0 : -1} className={`fixed inset-0 z-40 bg-obsidian/60 backdrop-blur-sm transition-opacity duration-300 lg:hidden ${open ? "opacity-100" : "pointer-events-none opacity-0"}`} />
 
       <aside
-        className={`fixed inset-y-0 start-0 z-50 flex w-64 flex-col bg-canvas transition-[transform,width] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] lg:sticky lg:top-0 lg:h-screen lg:w-60 lg:shrink-0 lg:translate-x-0 lg:collapsed:w-[4.5rem] ${
+        className={`fixed inset-y-0 start-0 z-50 flex w-64 flex-col bg-[var(--chrome)] shadow-[inset_-1px_0_0_var(--line)] backdrop-blur-2xl transition-[transform,width] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] lg:sticky lg:top-0 lg:h-screen lg:w-60 lg:shrink-0 lg:translate-x-0 lg:collapsed:w-[4.5rem] ${
           open ? "translate-x-0" : "max-lg:-translate-x-full"
         }`}
       >
