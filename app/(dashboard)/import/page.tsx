@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { Panel } from "@/components/panel";
 import { ImportSkeleton } from "@/components/skeletons";
-import { getCurrentUser } from "@/lib/auth";
+import { requireAccess } from "@/lib/auth";
+import { importKinds } from "@/lib/roles";
 import { getI18n } from "@/lib/i18n/server";
 import { getBranches } from "@/lib/sales";
 import { LIVE_DATA } from "@/lib/live-data";
@@ -40,7 +41,7 @@ async function getImports() {
 }
 
 async function ImportContent() {
-  const [{ t }, , branches, imports] = await Promise.all([getI18n(), getCurrentUser(), getBranches(), getImports()]);
+  const [{ t }, { role }, branches, imports] = await Promise.all([getI18n(), requireAccess("import"), getBranches(), getImports()]);
 
   return (
     <div className="rise space-y-8">
@@ -50,7 +51,7 @@ async function ImportContent() {
           <p className="text-sm text-muted">{t("import.noBranchBody")}</p>
         </Panel>
       ) : (
-        <ImportWizard branches={branches} />
+        <ImportWizard branches={branches} kinds={importKinds(role)} />
       )}
       <Panel title={t("import.history")} subtitle={t("import.historyNote")}>
         <ImportHistory imports={imports ?? []} />

@@ -6,7 +6,7 @@ import { Panel } from "@/components/panel";
 import { PeriodFilter } from "@/components/period-filter";
 import { SalesSkeleton } from "@/components/skeletons";
 import { StatTile } from "@/components/stat-tile";
-import { getCurrentUser } from "@/lib/auth";
+import { requireAccess } from "@/lib/auth";
 import { METRIC_COLORS, channelColor, nameColor } from "@/lib/chart-colors";
 import { binSeries, formatHour, formatMoney, formatMoneyExact, formatNumber, formatRange, NO_DATA } from "@/lib/format";
 import { labelFor } from "@/lib/i18n/config";
@@ -31,7 +31,7 @@ async function SalesContent({ searchParams }: { searchParams: PageProps<"/sales"
   const params = await searchParams;
   const period = await readPeriod(params, DASHBOARD_PRESETS, "30d");
   const branchId = readBranchId(params.branch);
-  const [{ t, locale }, { restaurant }, branches, data] = await Promise.all([getI18n(), getCurrentUser(), getBranches(), getSalesDashboard(period, branchId)]);
+  const [{ t, locale }, { restaurant }, branches, data] = await Promise.all([getI18n(), requireAccess("sales"), getBranches(), getSalesDashboard(period, branchId)]);
   const branch = branches.find((b) => b.id === branchId) ?? null;
 
   const currency = restaurant?.currency ?? "USD";

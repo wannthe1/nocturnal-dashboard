@@ -6,6 +6,7 @@ import { Breadcrumbs } from "@/components/breadcrumbs";
 import { DeleteButton } from "@/components/delete-button";
 import { Panel } from "@/components/panel";
 import { FormSkeleton } from "@/components/skeletons";
+import { requireAccess } from "@/lib/auth";
 import { getExpense } from "@/lib/expenses";
 import { formatDate } from "@/lib/format";
 import { getI18n } from "@/lib/i18n/server";
@@ -31,7 +32,7 @@ export default function EditExpensePage({ params }: PageProps<"/expenses/[id]">)
 async function EditExpense({ params }: { params: PageProps<"/expenses/[id]">["params"] }) {
   const { id } = await params;
   await connection(); // uses today's date
-  const [{ t, locale }, expense, branches] = await Promise.all([getI18n(), getExpense(id), getBranches()]);
+  const [{ t, locale }, expense, branches] = await Promise.all([getI18n(), getExpense(id), getBranches(), requireAccess("editExpenses")]);
   if (!expense) notFound();
   const today = new Date().toISOString().slice(0, 10);
 

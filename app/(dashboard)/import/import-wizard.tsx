@@ -47,9 +47,9 @@ type Status =
 
 const MAX_FILE_MB = 20;
 
-export function ImportWizard({ branches }: { branches: Branch[] }) {
+export function ImportWizard({ branches, kinds }: { branches: Branch[]; kinds: ImportKind[] }) {
   const { t } = useI18n();
-  const [kind, setKind] = useState<ImportKind>("sales");
+  const [kind, setKind] = useState<ImportKind>(kinds[0]);
   const [parsed, setParsed] = useState<Parsed | null>(null);
   const [mapping, setMapping] = useState<Record<string, string>>({});
   const [dateFormat, setDateFormat] = useState<DateFormat>("dmy");
@@ -194,7 +194,7 @@ export function ImportWizard({ branches }: { branches: Branch[] }) {
             value={kind}
             disabled={importing}
             onSelect={(k) => changeKind(k as ImportKind)}
-            items={[{ key: "sales", label: t("nav.sales") }, { key: "expenses", label: t("nav.expenses") }]}
+            items={kinds.map((k) => ({ key: k, label: k === "sales" ? t("nav.sales") : t("nav.expenses") }))}
           />
           <a href={`/templates/${kind}-template.csv`} download className="inline-flex items-center gap-1.5 text-sm font-medium text-accent-text hover:underline">
             <DownloadIcon className="h-4 w-4" />

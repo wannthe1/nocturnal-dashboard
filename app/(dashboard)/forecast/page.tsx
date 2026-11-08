@@ -8,7 +8,8 @@ import { LinkSegmented } from "@/components/link-segmented";
 import { Panel } from "@/components/panel";
 import { ForecastSkeleton } from "@/components/skeletons";
 import { StatTile } from "@/components/stat-tile";
-import { getCurrentUser } from "@/lib/auth";
+import { requireAccess } from "@/lib/auth";
+import { can } from "@/lib/roles";
 import { METRIC_COLORS, nameColor } from "@/lib/chart-colors";
 import { getExpenseSeries } from "@/lib/expenses";
 import { addDays, project, stockOutlook, weekdayOf, type Projection } from "@/lib/forecast";
@@ -52,7 +53,6 @@ type Shared = {
 
 async function ForecastContent({ searchParams }: { searchParams: PageProps<"/forecast">["searchParams"] }) {
   const params = await searchParams;
-  const view: View = VIEWS.includes(params.view as View) ? (params.view as View) : "sales";
   const horizon = HORIZONS.includes(Number(params.days)) ? Number(params.days) : 30;
   const branchId = readBranchId(params.branch);
 
@@ -61,7 +61,10 @@ async function ForecastContent({ searchParams }: { searchParams: PageProps<"/for
   const to = addDays(today, -1);
   const history: Period = { key: "forecast", today, from, to, previousFrom: from, previousTo: to, compareKey: "compare.custom" };
 
-  const [{ t, locale }, { restaurant }, branches, sales] = await Promise.all([getI18n(), getCurrentUser(), getBranches(), getSalesDashboard(history, branchId)]);
+  const [{ t, locale }, { restaurant, role }, branches, sales] = await Promise.all([getI18n(), requireAccess("forecast"), getBranches(), getSalesDashboard(history, branchId)]);
+  const views = VIEWS.filter((v) => v !== "inventory" || can(role, "forecastStock"));
+  const view: View = views.includes(params.view as View) ? (params.view as View) : "sales";
+  const canSeeMoney = can(role, "forecastMoney");
   const branch = branches.find((b) => b.id === branchId) ?? null;
   const currency = restaurant?.currency ?? "USD";
   const shared: Shared = {
@@ -86,7 +89,7 @@ async function ForecastContent({ searchParams }: { searchParams: PageProps<"/for
     <div className="space-y-8">
       <div data-filters className="relative z-20 space-y-2.5">
         <div className="flex flex-wrap gap-2.5">
-          <LinkSegmented label={t("forecast.view.label")} value={view} items={VIEWS.map((key) => ({ key, label: t(`forecast.view.${key}`), href: href({ view: key }) }))} />
+          <LinkSegmented label={t("forecast.view.label")} value={view} items={views.map((key) => ({ key, label: t(`forecast.view.${key}`), href: href({ view: key }) }))} />
           <LinkSegmented label={t("forecast.horizon")} value={String(horizon)} items={HORIZONS.map((d) => ({ key: String(d), label: t("forecast.days", { count: d }), href: href({ days: d }) }))} />
           {branches.length > 1 && (
             <LinkSegmented
@@ -99,7 +102,7 @@ async function ForecastContent({ searchParams }: { searchParams: PageProps<"/for
         <p className="text-xs text-faint">{t("forecast.basis", { window: shared.window, days: HISTORY_DAYS - 1 })}</p>
       </div>
 
-      {view === "sales" && <SalesForecast shared={shared} sales={sales} history={history} branchId={branchId} />}
+      {view === "sales" && <SalesForecast shared={shared} sales={sales} history={history} branchId={branchId} canSeeMoney={canSeeMoney} />}
       {view === "demand" && <DemandForecast shared={shared} sales={sales} from={from} to={to} branchId={branchId} />}
       {view === "inventory" && <InventoryForecast shared={shared} from={from} to={to} branchId={branchId} branches={branches} />}
     </div>
@@ -117,9 +120,9 @@ function toMap(rows: { date: string; value: number }[]) {
   return map;
 }
 
-async function SalesForecast({ shared, sales, history, branchId }: { shared: Shared; sales: SalesDashboard; history: Period; branchId: string | null }) {
+async function SalesForecast({ shared, sales, history, branchId, canSeeMoney }: { shared: Shared; sales: SalesDashboard; history: Period; branchId: string | null; canSeeMoney: boolean }) {
   const { t, locale, today, horizon, window, money, exact, currency } = shared;
-  const series = await getExpenseSeries(history, branchId);
+  const series = canSeeMoney ? await getExpenseSeries(history, branchId) : null;
 
   const revenueMap = toMap(sales.trend.map((p) => ({ date: p.period, value: p.revenue })));
   const ordersMap = toMap(sales.trend.map((p) => ({ date: p.period, value: p.orders })));
@@ -141,14 +144,19 @@ async function SalesForecast({ shared, sales, history, branchId }: { shared: Sha
   const weekdays = weekdayNames(locale);
   const byWeekday = new Array<number>(7).fill(0);
   revenue?.dates.forEach((d, i) => (byWeekday[weekdayOf(d)] += revenue.values[i]));
+  const busiestDay = byWeekday.indexOf(Math.max(...byWeekday));
+  const averageOrder = revenue && orders?.total ? revenue.total / orders.total : null;
 
   return (
     <>
       <section aria-label={t("common.keyFigures")} className="stagger kpi-grid">
-        <StatTile hero label={t("forecast.expectedProfit")} window={window} value={profit === null ? NO_DATA : `≈ ${money(profit)}`} exact={profit === null ? undefined : exact(profit)} current={profit ?? undefined} previous={recentProfit !== null && recentProfit > 0 ? recentProfit : undefined} format={money} compareLabel={compare} note={t("overview.profitNote")} />
-        <StatTile label={t("forecast.expectedRevenue")} window={window} value={revenue ? `≈ ${money(revenue.total)}` : NO_DATA} exact={revenue ? exact(revenue.total) : undefined} current={revenue?.total} previous={recentRevenue || undefined} format={money} compareLabel={revenue ? `${compare} · ${range(revenue.totalLow, revenue.totalHigh, money)}` : compare} note={t("forecast.notEnough")} />
-        <StatTile label={t("forecast.expectedCosts")} window={window} value={costs === null ? NO_DATA : `≈ ${money(costs)}`} exact={costs === null ? undefined : exact(costs)} current={costs ?? undefined} previous={recentCosts || undefined} format={money} upIsGood={false} compareLabel={compare} note={t("forecast.costNote")} />
+        {!canSeeMoney && <StatTile hero label={t("forecast.expectedRevenue")} window={window} value={revenue ? `≈ ${money(revenue.total)}` : NO_DATA} exact={revenue ? exact(revenue.total) : undefined} current={revenue?.total} previous={recentRevenue || undefined} format={money} compareLabel={compare} note={t("forecast.notEnough")} />}
+        {canSeeMoney && <StatTile hero label={t("forecast.expectedProfit")} window={window} value={profit === null ? NO_DATA : `≈ ${money(profit)}`} exact={profit === null ? undefined : exact(profit)} current={profit ?? undefined} previous={recentProfit !== null && recentProfit > 0 ? recentProfit : undefined} format={money} compareLabel={compare} note={t("overview.profitNote")} />}
+        {canSeeMoney && <StatTile label={t("forecast.expectedRevenue")} window={window} value={revenue ? `≈ ${money(revenue.total)}` : NO_DATA} exact={revenue ? exact(revenue.total) : undefined} current={revenue?.total} previous={recentRevenue || undefined} format={money} compareLabel={revenue ? `${compare} · ${range(revenue.totalLow, revenue.totalHigh, money)}` : compare} note={t("forecast.notEnough")} />}
+        {canSeeMoney && <StatTile label={t("forecast.expectedCosts")} window={window} value={costs === null ? NO_DATA : `≈ ${money(costs)}`} exact={costs === null ? undefined : exact(costs)} current={costs ?? undefined} previous={recentCosts || undefined} format={money} upIsGood={false} compareLabel={compare} note={t("forecast.costNote")} />}
         <StatTile label={t("forecast.expectedOrders")} window={window} value={orders ? `≈ ${formatNumber(orders.total)}` : NO_DATA} current={orders?.total} previous={sumRecent(ordersMap, today, horizon) || undefined} compareLabel={orders ? `${compare} · ${range(orders.totalLow, orders.totalHigh, formatNumber)}` : compare} note={t("forecast.notEnough")} />
+        {!canSeeMoney && <StatTile label={t("sales.avgOrder")} window={window} value={averageOrder === null ? NO_DATA : `≈ ${exact(averageOrder)}`} note={t("forecast.notEnough")} />}
+        {!canSeeMoney && <StatTile label={t("forecast.busiestDay")} window={window} value={revenue ? weekdays[busiestDay].long : NO_DATA} note={t("forecast.notEnough")} />}
       </section>
 
       <ForecastChart

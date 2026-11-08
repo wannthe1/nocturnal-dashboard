@@ -3,14 +3,16 @@
 import { revalidatePath } from "next/cache";
 import { getVerifiedUser } from "@/lib/auth";
 import { getI18n } from "@/lib/i18n/server";
+import { can } from "@/lib/roles";
 import { createClient } from "@/lib/supabase/server";
 
 export type RecipeFormState = { error?: string; savedAt?: number };
 
 // Adds a stock item to a menu item's recipe, or updates its quantity.
 export async function saveRecipeLine(_prev: RecipeFormState, formData: FormData): Promise<RecipeFormState> {
-  const [{ restaurant }, { t }] = await Promise.all([getVerifiedUser(), getI18n()]);
+  const [{ restaurant, role }, { t }] = await Promise.all([getVerifiedUser(), getI18n()]);
   if (!restaurant) return { error: t("action.noRestaurant") };
+  if (!can(role, "editInventory")) return { error: t("action.noPermission") };
 
   const menuItem = String(formData.get("menu_item") ?? "").trim();
   const stockItem = String(formData.get("stock_item") ?? "").trim();
@@ -30,7 +32,8 @@ export async function saveRecipeLine(_prev: RecipeFormState, formData: FormData)
 }
 
 export async function deleteRecipeLine(id: string) {
-  await getVerifiedUser();
+  const { role } = await getVerifiedUser();
+  if (!can(role, "editInventory")) return;
   const supabase = await createClient();
   await supabase.from("recipe_lines").delete().eq("id", id);
   revalidatePath("/", "layout");

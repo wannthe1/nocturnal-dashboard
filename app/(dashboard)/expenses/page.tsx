@@ -8,7 +8,8 @@ import { Panel } from "@/components/panel";
 import { PeriodFilter } from "@/components/period-filter";
 import { ExpensesSkeleton } from "@/components/skeletons";
 import { StatTile } from "@/components/stat-tile";
-import { getCurrentUser } from "@/lib/auth";
+import { requireAccess } from "@/lib/auth";
+import { can } from "@/lib/roles";
 import { METRIC_COLORS, expenseColor, nameColor, sharedColor } from "@/lib/chart-colors";
 import { getExpenseSeries, getExpenseSummary, getRecentExpenses, type Expense } from "@/lib/expenses";
 import { binSeries, formatDate, formatMoney, formatMoneyExact, formatNumber, formatRange, NO_DATA } from "@/lib/format";
@@ -36,9 +37,9 @@ async function ExpensesContent({ searchParams }: { searchParams: PageProps<"/exp
   const params = await searchParams;
   const period = await readPeriod(params, DASHBOARD_PRESETS, "30d");
   const branchId = readBranchId(params.branch);
-  const [{ t, locale }, { restaurant }, branches, summary, sales, recent, series] = await Promise.all([
+  const [{ t, locale }, { restaurant, role }, branches, summary, sales, recent, series] = await Promise.all([
     getI18n(),
-    getCurrentUser(),
+    requireAccess("expenses"),
     getBranches(),
     getExpenseSummary(period, branchId),
     getSalesDashboard(period, branchId),
@@ -70,11 +71,27 @@ async function ExpensesContent({ searchParams }: { searchParams: PageProps<"/exp
   const categoryRows = summary.by_category.map((c) => ({ name: labelFor(t, "expenseCat", c.name), value: c.amount, color: expenseColor(c.name) }));
   const branchRows = summary.by_branch.map((b) => (b.name === "Shared" ? { name: t("common.shared"), value: b.amount, color: sharedColor } : { name: b.name, value: b.amount, color: nameColor(b.name) }));
 
+  // HR's database access only includes wages, so they get just that.
+  if (role === "hr") {
+    return (
+      <div className="space-y-8">
+        <PeriodFilter basePath="/expenses" presets={DASHBOARD_PRESETS} period={period} branch={branch} branches={branches} />
+        <section aria-label={t("common.keyFigures")} className="stagger grid">
+          <StatTile hero label={t("expenseCat.wages")} window={window} value={hasExpenses ? money(summary.total) : NO_DATA} exact={exact(summary.total)} note={t("expenses.count", { count: summary.count })} />
+        </section>
+        <Panel title={t("expenses.list")} subtitle={window}>
+          {hasExpenses ? <ExpenseTable expenses={recent} showBranch={!branch && branches.length > 1} money={exact} t={t} locale={locale} canEdit={false} /> : <p className="text-sm text-muted">{t("common.noData")}</p>}
+        </Panel>
+      </div>
+    );
+  }
+  const canEdit = can(role, "editExpenses");
+
   return (
     <div className="space-y-8">
       <div data-filters className="flex flex-wrap items-start justify-between gap-3">
         <PeriodFilter basePath="/expenses" presets={DASHBOARD_PRESETS} period={period} branch={branch} branches={branches} />
-        <Link href="/expenses/new" className="btn btn-primary h-10"><PlusIcon className="h-4 w-4" />{t("expenses.add")}</Link>
+        {canEdit && <Link href="/expenses/new" className="btn btn-primary h-10"><PlusIcon className="h-4 w-4" />{t("expenses.add")}</Link>}
       </div>
 
       <section aria-label={t("common.keyFigures")} className="stagger kpi-grid">
@@ -115,7 +132,7 @@ async function ExpensesContent({ searchParams }: { searchParams: PageProps<"/exp
         subtitle={`${summary.count > LIST_LIMIT ? t("expenses.latestOf", { limit: LIST_LIMIT, total: formatNumber(summary.count) }) : t("expenses.count", { count: summary.count })} · ${window}`}
       >
         {hasExpenses ? (
-          <ExpenseTable expenses={recent} showBranch={!branch && branches.length > 1} money={exact} t={t} locale={locale} />
+          <ExpenseTable expenses={recent} showBranch={!branch && branches.length > 1} money={exact} t={t} locale={locale} canEdit={canEdit} />
         ) : (
           <p className="text-sm text-muted">{t("expenses.emptyBody")}</p>
         )}
@@ -130,7 +147,9 @@ function ExpenseTable({
   money,
   t,
   locale,
+  canEdit,
 }: {
+  canEdit: boolean;
   expenses: Expense[];
   showBranch: boolean;
   money: (v: number) => string;
@@ -161,9 +180,11 @@ function ExpenseTable({
               {showBranch && <td>{e.branches?.name ?? t("common.shared")}</td>}
               <td className="num strong">{money(e.amount)}</td>
               <td className="text-end">
-                <Link href={`/expenses/${e.id}`} className="rounded-md px-2 py-1 text-sm font-medium text-accent-text hover:underline" aria-label={`${t("common.edit")}: ${e.description}`}>
-                  {t("common.edit")}
-                </Link>
+                {canEdit && (
+                  <Link href={`/expenses/${e.id}`} className="rounded-md px-2 py-1 text-sm font-medium text-accent-text hover:underline" aria-label={`${t("common.edit")}: ${e.description}`}>
+                    {t("common.edit")}
+                  </Link>
+                )}
               </td>
             </tr>
           ))}

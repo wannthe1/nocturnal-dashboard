@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { getVerifiedUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { getI18n } from "@/lib/i18n/server";
+import { importKinds } from "@/lib/roles";
 import {
   MAX_CHUNK,
   isValidExpenseRow,
@@ -17,9 +18,10 @@ type Result<T = object> = ({ ok: true } & T) | { ok: false; error: string };
 
 // Step 1: record the file. Rows saved afterwards point back to this import.
 export async function startImport(kind: ImportKind, fileName: string): Promise<Result<{ id: string }>> {
-  const [{ restaurant }, { t }] = await Promise.all([getVerifiedUser(), getI18n()]);
+  const [{ restaurant, role }, { t }] = await Promise.all([getVerifiedUser(), getI18n()]);
   if (!restaurant) return { ok: false, error: t("action.noRestaurant") };
   if (kind !== "sales" && kind !== "expenses") return { ok: false, error: t("import.err.kind") };
+  if (!importKinds(role).includes(kind)) return { ok: false, error: t("action.noPermission") };
 
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -37,8 +39,9 @@ export async function importRows(
   kind: ImportKind,
   rows: SaleRow[] | ExpenseRow[],
 ): Promise<Result<{ saved: number }>> {
-  const [{ restaurant }, { t }] = await Promise.all([getVerifiedUser(), getI18n()]);
+  const [{ restaurant, role }, { t }] = await Promise.all([getVerifiedUser(), getI18n()]);
   if (!restaurant) return { ok: false, error: t("action.noRestaurant") };
+  if (!importKinds(role).includes(kind)) return { ok: false, error: t("action.noPermission") };
   if (!Array.isArray(rows) || rows.length === 0 || rows.length > MAX_CHUNK) {
     return { ok: false, error: t("import.err.batch") };
   }

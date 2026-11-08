@@ -5,6 +5,7 @@ import { Breadcrumbs } from "@/components/breadcrumbs";
 import { DeleteButton } from "@/components/delete-button";
 import { Panel } from "@/components/panel";
 import { FormSkeleton } from "@/components/skeletons";
+import { requireAccess } from "@/lib/auth";
 import { getI18n } from "@/lib/i18n/server";
 import { getInventory, getInventoryItem } from "@/lib/inventory";
 import { getBranches } from "@/lib/sales";
@@ -28,7 +29,7 @@ export default function EditItemPage({ params }: PageProps<"/inventory/[id]">) {
 
 async function EditItem({ params }: { params: PageProps<"/inventory/[id]">["params"] }) {
   const { id } = await params;
-  const [{ t }, item, branches, items] = await Promise.all([getI18n(), getInventoryItem(id), getBranches(), getInventory()]);
+  const [{ t }, item, branches, items] = await Promise.all([getI18n(), getInventoryItem(id), getBranches(), getInventory(), requireAccess("editInventory")]);
   if (!item) notFound();
   const categories = [...new Set(items.map((i) => i.category))].sort();
 

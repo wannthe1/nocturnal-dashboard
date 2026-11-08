@@ -4,15 +4,19 @@ import { LogOutIcon } from "@/components/icons";
 import { LogoMark } from "@/components/logo";
 import { usePopover } from "@/components/use-popover";
 import { useI18n } from "@/lib/i18n/client";
+import { labelFor } from "@/lib/i18n/config";
+import type { Role } from "@/lib/roles";
 
 // The profile button (the company logo) and its menu.
 export function AccountMenu({
   name,
   email,
+  role,
   signOut,
 }: {
   name: string | null;
   email: string;
+  role: Role | null;
   signOut: () => Promise<void>;
 }) {
   const { t } = useI18n();
@@ -35,6 +39,7 @@ export function AccountMenu({
             <div className="min-w-0">
               <p className="truncate text-sm font-semibold text-ink">{name ?? t("account.myRestaurant")}</p>
               <p className="truncate text-xs text-faint">{email}</p>
+              {role && <p className="truncate text-xs font-medium text-accent-text">{labelFor(t, "role", role)}</p>}
             </div>
           </div>
           <div className="my-1 h-px bg-line" />

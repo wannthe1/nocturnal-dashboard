@@ -3,7 +3,7 @@ import { Suspense } from "react";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import { Panel } from "@/components/panel";
 import { FormSkeleton } from "@/components/skeletons";
-import { getCurrentUser } from "@/lib/auth";
+import { requireAccess } from "@/lib/auth";
 import { getI18n } from "@/lib/i18n/server";
 import { getInventory } from "@/lib/inventory";
 import { getBranches } from "@/lib/sales";
@@ -25,7 +25,7 @@ export default function NewItemPage() {
 }
 
 async function NewItemForm() {
-  const [{ t }, branches, items] = await Promise.all([getI18n(), getBranches(), getInventory(), getCurrentUser()]);
+  const [{ t }, branches, items] = await Promise.all([getI18n(), getBranches(), getInventory(), requireAccess("editInventory")]);
   const categories = [...new Set(items.map((i) => i.category))].sort();
 
   return (

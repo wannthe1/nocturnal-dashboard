@@ -3,7 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 
 // Pages and files anyone can open without signing in. Icons, the share image and
 // robots.txt must be public so browsers, link previews and search engines can read them.
-const PUBLIC_PATHS = ["/login", "/auth", "/privacy", "/icon", "/apple-icon", "/opengraph-image", "/robots.txt"];
+const PUBLIC_PATHS = ["/login", "/auth", "/invite", "/privacy", "/icon", "/apple-icon", "/opengraph-image", "/robots.txt"];
 
 // Runs before every page request. It keeps the Supabase session fresh and
 // sends signed-out visitors to /login. (Pages still check the user themselves;

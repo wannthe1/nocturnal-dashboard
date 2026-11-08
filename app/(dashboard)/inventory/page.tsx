@@ -7,7 +7,8 @@ import { Panel } from "@/components/panel";
 import { SearchBox } from "@/components/search-box";
 import { InventorySkeleton } from "@/components/skeletons";
 import { StatTile } from "@/components/stat-tile";
-import { getCurrentUser } from "@/lib/auth";
+import { requireAccess } from "@/lib/auth";
+import { can } from "@/lib/roles";
 import { formatMoney, formatMoneyExact, formatNumber, NO_DATA } from "@/lib/format";
 import type { Translate } from "@/lib/i18n/config";
 import { getI18n } from "@/lib/i18n/server";
@@ -38,7 +39,7 @@ async function InventoryContent({ searchParams }: { searchParams: PageProps<"/in
   const search = typeof params.q === "string" ? params.q.trim() : "";
 
   const branchId = readBranchId(params.branch);
-  const [{ t }, { restaurant }, branches, items] = await Promise.all([getI18n(), getCurrentUser(), getBranches(), getInventory(branchId)]);
+  const [{ t }, { restaurant, role }, branches, items] = await Promise.all([getI18n(), requireAccess("inventory"), getBranches(), getInventory(branchId)]);
   const branch = branches.find((b) => b.id === branchId) ?? null;
   const currency = restaurant?.currency ?? "USD";
 
@@ -88,6 +89,7 @@ async function InventoryContent({ searchParams }: { searchParams: PageProps<"/in
   const didYouMean = search && visible.length === 0 ? closestMatch(search, suggestions.map((s) => s.label)) : null;
 
   const rightNow = t("common.rightNow");
+  const canEdit = can(role, "editInventory");
 
   const href = (next: { status?: StatusFilter; branch?: string | null; q?: string }) => {
     const p = new URLSearchParams();
@@ -140,8 +142,8 @@ async function InventoryContent({ searchParams }: { searchParams: PageProps<"/in
             placeholder={t("inventory.searchPlaceholder")}
             label={t("inventory.searchLabel")}
           />
-          <Link href="/inventory/recipes" className="btn btn-ghost h-10">{t("recipes.title")}</Link>
-          <Link href="/inventory/new" className="btn btn-primary h-10"><PlusIcon className="h-4 w-4" />{t("inventory.add")}</Link>
+          {canEdit && <Link href="/inventory/recipes" className="btn btn-ghost h-10">{t("recipes.title")}</Link>}
+          {canEdit && <Link href="/inventory/new" className="btn btn-primary h-10"><PlusIcon className="h-4 w-4" />{t("inventory.add")}</Link>}
         </div>
       </div>
 
@@ -159,7 +161,7 @@ async function InventoryContent({ searchParams }: { searchParams: PageProps<"/in
             )}
           </p>
         ) : (
-          <InventoryTable items={visible} showBranch={!branch && branches.length > 1} currency={currency} t={t} />
+          <InventoryTable items={visible} showBranch={!branch && branches.length > 1} currency={currency} t={t} canEdit={canEdit} />
         )}
       </Panel>
     </div>
@@ -168,7 +170,7 @@ async function InventoryContent({ searchParams }: { searchParams: PageProps<"/in
 
 const formatQty = (value: number) => new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 }).format(value);
 
-async function InventoryTable({ items, showBranch, currency, t }: { items: InventoryItem[]; showBranch: boolean; currency: string; t: Translate }) {
+async function InventoryTable({ items, showBranch, currency, t, canEdit }: { items: InventoryItem[]; showBranch: boolean; currency: string; t: Translate; canEdit: boolean }) {
   return (
     // `relative` keeps the screen-reader-only header inside the scroll area.
     <div className="relative -mx-2 overflow-x-auto">
@@ -197,9 +199,9 @@ async function InventoryTable({ items, showBranch, currency, t }: { items: Inven
               <td className="num">{formatMoneyExact(item.quantity * item.unit_cost, currency)}</td>
               <td><StockBadge status={stockStatus(item) as StockStatus} /></td>
               <td className="text-end">
-                <Link href={`/inventory/${item.id}`} className="rounded-md px-2 py-1 text-sm font-medium text-accent-text hover:underline" aria-label={`${t("common.edit")}: ${item.name}${showBranch ? ` (${item.branches?.name})` : ""}`}>
+                {canEdit && <Link href={`/inventory/${item.id}`} className="rounded-md px-2 py-1 text-sm font-medium text-accent-text hover:underline" aria-label={`${t("common.edit")}: ${item.name}${showBranch ? ` (${item.branches?.name})` : ""}`}>
                   {t("common.edit")}
-                </Link>
+                </Link>}
               </td>
             </tr>
           ))}

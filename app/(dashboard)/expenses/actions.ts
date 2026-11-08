@@ -6,6 +6,7 @@ import { getVerifiedUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { EXPENSE_CATEGORIES } from "@/lib/expenses-shared";
 import { getI18n } from "@/lib/i18n/server";
+import { can } from "@/lib/roles";
 
 // `values` sends back what was typed so the form can refill itself after an error.
 export type ExpenseFormState = { error?: string; values?: Record<string, string> };
@@ -21,8 +22,9 @@ export async function saveExpense(_prev: ExpenseFormState, formData: FormData): 
 
 // Creates a new expense, or updates one when the form includes an id.
 async function validateAndSave(formData: FormData): Promise<ExpenseFormState> {
-  const [{ restaurant }, { t }] = await Promise.all([getVerifiedUser(), getI18n()]);
+  const [{ restaurant, role }, { t }] = await Promise.all([getVerifiedUser(), getI18n()]);
   if (!restaurant) return { error: t("action.noRestaurant") };
+  if (!can(role, "editExpenses")) return { error: t("action.noPermission") };
 
   const id = String(formData.get("id") ?? "") || null;
   const spentOn = String(formData.get("spent_on") ?? "");
@@ -53,7 +55,8 @@ async function validateAndSave(formData: FormData): Promise<ExpenseFormState> {
 }
 
 export async function deleteExpense(id: string) {
-  await getVerifiedUser();
+  const { role } = await getVerifiedUser();
+  if (!can(role, "editExpenses")) return;
   const supabase = await createClient();
   await supabase.from("expenses").delete().eq("id", id);
   revalidatePath("/", "layout");

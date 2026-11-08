@@ -4,7 +4,7 @@ import { Suspense } from "react";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import { Panel } from "@/components/panel";
 import { FormSkeleton } from "@/components/skeletons";
-import { getCurrentUser } from "@/lib/auth";
+import { requireAccess } from "@/lib/auth";
 import { getI18n } from "@/lib/i18n/server";
 import { getBranches } from "@/lib/sales";
 import { ExpenseForm } from "../expense-form";
@@ -26,7 +26,7 @@ export default function NewExpensePage() {
 
 async function NewExpenseForm() {
   await connection(); // uses today's date
-  const [{ t }, branches] = await Promise.all([getI18n(), getBranches(), getCurrentUser()]);
+  const [{ t }, branches] = await Promise.all([getI18n(), getBranches(), requireAccess("editExpenses")]);
   const today = new Date().toISOString().slice(0, 10);
 
   return (

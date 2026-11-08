@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { getCurrentUser } from "@/lib/auth";
 import { signOut } from "@/app/login/actions";
@@ -18,11 +19,12 @@ export default function DashboardLayout({ children }: LayoutProps<"/">) {
 
 // Reads the language first, so the menu is never shown in the wrong one.
 async function Shell({ children }: { children: React.ReactNode }) {
-  const { locale, messages } = await getI18n();
+  const [{ locale, messages }, { role }] = await Promise.all([getI18n(), getCurrentUser()]);
+  if (!role) redirect("/no-access");
   return (
     <I18nProvider locale={locale} messages={messages}>
       <div className="min-h-screen lg:flex">
-        <Sidebar />
+        <Sidebar role={role} />
         <div className="min-w-0 flex-1">
           <Topbar
             account={
@@ -39,8 +41,8 @@ async function Shell({ children }: { children: React.ReactNode }) {
 }
 
 async function Account() {
-  const { email, restaurant } = await getCurrentUser();
-  return <AccountMenu name={restaurant?.name ?? null} email={email} signOut={signOut} />;
+  const { email, restaurant, role } = await getCurrentUser();
+  return <AccountMenu name={restaurant?.name ?? null} email={email} role={role} signOut={signOut} />;
 }
 
 function ShellFallback() {

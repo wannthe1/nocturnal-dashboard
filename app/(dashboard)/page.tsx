@@ -10,7 +10,7 @@ import { PeriodFilter } from "@/components/period-filter";
 import { OverviewSkeleton } from "@/components/skeletons";
 import { Ring } from "@/components/sparkline";
 import { StatTile } from "@/components/stat-tile";
-import { getCurrentUser } from "@/lib/auth";
+import { requireAccess } from "@/lib/auth";
 import { METRIC_COLORS, channelColor } from "@/lib/chart-colors";
 import { getExpenseSeries, getExpenseSummary } from "@/lib/expenses";
 import { binSeries, formatMoney, formatMoneyExact, formatNumber, formatRange, NO_DATA } from "@/lib/format";
@@ -39,7 +39,7 @@ async function Overview({ searchParams }: { searchParams: PageProps<"/">["search
   const branchId = readBranchId(params.branch);
   const [{ t, locale }, { restaurant }, branches, sales, expenses, series, stock] = await Promise.all([
     getI18n(),
-    getCurrentUser(),
+    requireAccess("overview"),
     getBranches(),
     getSalesDashboard(period, branchId),
     getExpenseSummary(period, branchId),

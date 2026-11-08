@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { clearFailures, lockSeconds, loginKey, recordFailure } from "@/lib/login-guard";
 import { getI18n } from "@/lib/i18n/server";
 
 // `values` sends back what was typed (never the password) so the form
@@ -11,6 +12,7 @@ import { getI18n } from "@/lib/i18n/server";
 export type AuthState = {
   error?: string;
   message?: string;
+  lockedUntil?: number; // when sign-in reopens after too many wrong passwords (ms)
   values?: { email: string; restaurantName: string };
 };
 
@@ -32,9 +34,18 @@ export async function signIn(_prev: AuthState, formData: FormData): Promise<Auth
     return { error: t("login.err.missing"), values };
   }
 
+  // Checked before the password, so a locked account gets no answer either way.
+  const key = loginKey(email);
+  const waiting = await lockSeconds(key);
+  if (waiting > 0) return { lockedUntil: Date.now() + waiting * 1000, values };
+
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) {
+    if (error.code === "invalid_credentials") {
+      const lock = await recordFailure(key);
+      if (lock > 0) return { lockedUntil: Date.now() + lock * 1000, values };
+    }
     const message =
       error.code === "email_not_confirmed"
         ? t("login.err.confirm")
@@ -42,6 +53,7 @@ export async function signIn(_prev: AuthState, formData: FormData): Promise<Auth
     return { error: message, values };
   }
 
+  await clearFailures(key);
   revalidatePath("/", "layout");
   redirect("/");
 }

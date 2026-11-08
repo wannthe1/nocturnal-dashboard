@@ -12,9 +12,10 @@ A restaurant dashboard for tracking sales, stock, expenses and profit, and forec
 | **Inventory** | Stock levels per branch, reorder alerts, search, and recipes that link menu items to stock |
 | **Expenses** | Costs by category and branch, with profit and margin |
 | **Reports** | Monthly profit and loss, branch comparison, and CSV export |
+| **Team** | Invite links, roles and removing access |
 | **Import** | Bring in sales or expenses from any CSV, with a preview, row checks and one-click undo |
 
-Each account only ever sees its own restaurant's data, enforced by Row Level Security in the database.
+Owners invite staff by link, and each person signs in with their own login. Roles (Admin, Finance, Sales, Inventory, HR) control what each person sees, and Row Level Security enforces this in the database.
 
 ## Tech stack
 
@@ -46,6 +47,7 @@ Copy `.env.example` to `.env.local` and fill in your values from your Supabase p
 | `NEXT_PUBLIC_SUPABASE_URL` | Your project URL |
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Your publishable (anon) key |
 | `NEXT_PUBLIC_SITE_URL` | Your public address (production only) |
+| `SUPABASE_SECRET_KEY` | Server-only key for the sign-in lock (production) |
 
 **4. Configure sign-in redirects**
 
@@ -105,7 +107,7 @@ public/         CSV import templates
 
 The app can be hosted on any platform that runs Next.js, such as [Vercel](https://vercel.com). Before going live:
 
-1. Add the three environment variables to your host.
+1. Add the environment variables to your host.
 2. Add your live address to the Site URL and Redirect URLs in Supabase (`https://your-domain/auth/callback`).
 3. Turn on **Confirm email** in Supabase and set up your own SMTP provider. The built-in sender only allows a few emails per hour.
 4. Replace the contact address in `app/privacy/page.tsx` and have the policy reviewed.
@@ -115,7 +117,8 @@ The app can be hosted on any platform that runs Next.js, such as [Vercel](https:
 
 - Dates are grouped in UTC, so "today" and busiest hours may not match local time.
 - Branches can't yet be added or renamed in the app.
-- Each restaurant has a single owner account. Staff roles aren't available yet.
+- Staff in a role see every branch. Access can't yet be limited to one branch.
+- HR has limited data: the team list and staff wages.
 - Translations haven't been reviewed by native speakers.
 
 ---

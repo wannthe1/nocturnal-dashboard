@@ -2,8 +2,9 @@ import "server-only";
 import { cache } from "react";
 import { cacheLife } from "next/cache";
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
 import { LIVE_DATA } from "@/lib/live-data";
+import { can, homeFor, type Area, type Role } from "@/lib/roles";
+import { createClient } from "@/lib/supabase/server";
 
 export type Restaurant = {
   id: string;
@@ -11,22 +12,31 @@ export type Restaurant = {
   currency: string;
 };
 
+type Supabase = Awaited<ReturnType<typeof createClient>>;
+
 // Checks the signature of the login token right here, without a trip to Supabase.
 async function readClaims() {
   "use cache: private";
   cacheLife(LIVE_DATA);
   const supabase = await createClient();
   const { data } = await supabase.auth.getClaims();
-  return data?.claims ? { email: (data.claims.email as string | undefined) ?? "" } : null;
+  return data?.claims ? { id: data.claims.sub as string, email: (data.claims.email as string | undefined) ?? "" } : null;
 }
 
-async function readRestaurant() {
+// The person's restaurant and role. Row Level Security only ever returns their own.
+async function lookUpAccess(supabase: Supabase, userId: string) {
+  const { data } = await supabase.from("restaurants").select("id, name, currency, owner_id").maybeSingle<Restaurant & { owner_id: string }>();
+  if (!data) return { restaurant: null, role: null as Role | null, isOwner: false };
+  const restaurant: Restaurant = { id: data.id, name: data.name, currency: data.currency };
+  if (data.owner_id === userId) return { restaurant, role: "admin" as Role | null, isOwner: true };
+  const { data: member } = await supabase.from("team_members").select("role").eq("user_id", userId).maybeSingle<{ role: Role }>();
+  return { restaurant, role: (member?.role ?? null) as Role | null, isOwner: false };
+}
+
+async function readAccess(userId: string) {
   "use cache: private";
   cacheLife(LIVE_DATA);
-  const supabase = await createClient();
-  // Row Level Security means this only ever returns the user's own restaurant.
-  const { data } = await supabase.from("restaurants").select("id, name, currency").maybeSingle<Restaurant>();
-  return data;
+  return lookUpAccess(await createClient(), userId);
 }
 
 // The signed-in user, or a redirect to /login. No database trip.
@@ -36,12 +46,20 @@ export const requireUser = cache(async () => {
   return claims;
 });
 
-// The signed-in user and their restaurant, for pages. `cache` makes repeat calls
-// during the same request reuse the first result.
+// The signed-in user with their restaurant and role, for pages. `cache` makes
+// repeat calls during the same request reuse the first result.
 export const getCurrentUser = cache(async () => {
-  const [{ email }, restaurant] = await Promise.all([requireUser(), readRestaurant()]);
-  return { email, restaurant };
+  const { id, email } = await requireUser();
+  return { id, email, ...(await readAccess(id)) };
 });
+
+// For pages: sends anyone whose role doesn't include this area to their own home page.
+export async function requireAccess(area: Area) {
+  const user = await getCurrentUser();
+  if (!user.role) redirect("/no-access");
+  if (!can(user.role, area)) redirect(homeFor(user.role));
+  return user;
+}
 
 // For anything that changes data: asks Supabase directly, so a session that was
 // just revoked can't save anything.
@@ -49,6 +67,5 @@ export async function getVerifiedUser() {
   const supabase = await createClient();
   const { data: userData } = await supabase.auth.getUser();
   if (!userData.user) redirect("/login");
-  const { data: restaurant } = await supabase.from("restaurants").select("id, name, currency").maybeSingle<Restaurant>();
-  return { email: userData.user.email ?? "", restaurant };
+  return { id: userData.user.id, email: userData.user.email ?? "", ...(await lookUpAccess(supabase, userData.user.id)) };
 }

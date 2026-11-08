@@ -4,7 +4,7 @@ import { Breadcrumbs } from "@/components/breadcrumbs";
 import { CloseIcon } from "@/components/icons";
 import { Panel } from "@/components/panel";
 import { FormSkeleton } from "@/components/skeletons";
-import { getCurrentUser } from "@/lib/auth";
+import { requireAccess } from "@/lib/auth";
 import { addDays } from "@/lib/forecast";
 import { getDemandHistory, getRecipeLines } from "@/lib/forecast-data";
 import { getI18n } from "@/lib/i18n/server";
@@ -30,7 +30,7 @@ export default function RecipesPage() {
 
 async function Recipes() {
   const today = await getToday();
-  const [{ t }, , lines, stock, sold] = await Promise.all([getI18n(), getCurrentUser(), getRecipeLines(), getInventory(), getDemandHistory(addDays(today, -91), addDays(today, -1))]);
+  const [{ t }, , lines, stock, sold] = await Promise.all([getI18n(), requireAccess("editInventory"), getRecipeLines(), getInventory(), getDemandHistory(addDays(today, -91), addDays(today, -1))]);
 
   const menuItems = [...new Set([...sold.map((r) => r.item), ...lines.map((l) => l.menu_item)])].sort();
   const stockItems = [...new Map(stock.map((s) => [s.name, { name: s.name, unit: s.unit }])).values()].sort((a, b) => a.name.localeCompare(b.name));

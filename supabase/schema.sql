@@ -15,15 +15,154 @@ create table if not exists public.restaurants (
   created_at timestamptz not null default now()
 );
 
--- Row Level Security: with RLS on, a signed-in user can only see and change
--- rows where they are the owner. Nobody else's data is ever returned.
+-- ---------------------------------------------------------------------------
+-- Team: staff who sign in with their own login and see only what their role
+-- allows. The restaurant's owner is always an admin and needs no row here.
+-- Each person belongs to one restaurant.
+-- ---------------------------------------------------------------------------
+create table if not exists public.team_members (
+  user_id       uuid primary key references auth.users (id) on delete cascade,
+  restaurant_id uuid not null references public.restaurants (id) on delete cascade,
+  role          text not null check (role in ('admin', 'finance', 'sales', 'inventory', 'hr')),
+  email         text not null,
+  created_at    timestamptz not null default now()
+);
+
+create index if not exists team_members_restaurant_idx on public.team_members (restaurant_id);
+
+-- Single-use invite links. Only a hash of the token is stored, so the links
+-- can't be recovered from the database.
+create table if not exists public.team_invitations (
+  id            uuid primary key default gen_random_uuid(),
+  restaurant_id uuid not null references public.restaurants (id) on delete cascade,
+  role          text not null check (role in ('admin', 'finance', 'sales', 'inventory', 'hr')),
+  token_hash    text not null unique,
+  created_at    timestamptz not null default now(),
+  expires_at    timestamptz not null default now() + interval '7 days',
+  used_at       timestamptz
+);
+
+-- The restaurants the signed-in user belongs to with one of the given roles
+-- (no roles = any role). Owners always count. Every security rule below uses it.
+create or replace function public.my_restaurants(variadic p_roles text[] default '{}')
+returns setof uuid
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select id from public.restaurants where owner_id = (select auth.uid())
+  union
+  select restaurant_id from public.team_members
+  where user_id = (select auth.uid()) and (cardinality(p_roles) = 0 or role = any (p_roles));
+$$;
+
+revoke execute on function public.my_restaurants(text[]) from public, anon;
+grant execute on function public.my_restaurants(text[]) to authenticated;
+
+alter table public.team_members enable row level security;
+
+drop policy if exists "See own membership" on public.team_members;
+create policy "See own membership"
+  on public.team_members for select to authenticated
+  using (user_id = (select auth.uid()));
+
+drop policy if exists "Admins and HR see the team" on public.team_members;
+create policy "Admins and HR see the team"
+  on public.team_members for select to authenticated
+  using (restaurant_id in (select public.my_restaurants('admin', 'hr')));
+
+drop policy if exists "Admins change roles" on public.team_members;
+create policy "Admins change roles"
+  on public.team_members for update to authenticated
+  using (restaurant_id in (select public.my_restaurants('admin')))
+  with check (restaurant_id in (select public.my_restaurants('admin')));
+
+drop policy if exists "Admins remove members" on public.team_members;
+create policy "Admins remove members"
+  on public.team_members for delete to authenticated
+  using (restaurant_id in (select public.my_restaurants('admin')));
+
+alter table public.team_invitations enable row level security;
+
+drop policy if exists "Admins manage invites" on public.team_invitations;
+create policy "Admins manage invites"
+  on public.team_invitations for all to authenticated
+  using (restaurant_id in (select public.my_restaurants('admin')))
+  with check (restaurant_id in (select public.my_restaurants('admin')));
+
+-- What an invite link is for, so the invite page can greet the person.
+create or replace function public.invite_details(p_token text)
+returns jsonb
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select jsonb_build_object('restaurant', r.name, 'role', i.role)
+  from public.team_invitations i
+  join public.restaurants r on r.id = i.restaurant_id
+  where i.token_hash = encode(sha256(convert_to(p_token, 'UTF8')), 'hex')
+    and i.used_at is null and i.expires_at > now();
+$$;
+
+revoke execute on function public.invite_details(text) from public;
+grant execute on function public.invite_details(text) to anon, authenticated;
+
+-- Uses up an invite and adds the person to the team. Not callable directly.
+create or replace function public.claim_invite(p_token text, p_user uuid, p_email text)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_invite public.team_invitations;
+begin
+  select * into v_invite from public.team_invitations
+  where token_hash = encode(sha256(convert_to(p_token, 'UTF8')), 'hex')
+    and used_at is null and expires_at > now()
+  for update;
+  if not found then
+    raise exception 'invalid_invite';
+  end if;
+  if exists (select 1 from public.restaurants where owner_id = p_user)
+     or exists (select 1 from public.team_members where user_id = p_user) then
+    raise exception 'already_member';
+  end if;
+
+  insert into public.team_members (user_id, restaurant_id, role, email)
+  values (p_user, v_invite.restaurant_id, v_invite.role, coalesce(p_email, ''));
+  update public.team_invitations set used_at = now() where id = v_invite.id;
+end;
+$$;
+
+revoke execute on function public.claim_invite(text, uuid, text) from public, anon, authenticated;
+
+-- For someone already signed in who has no restaurant (e.g. removed, then re-invited).
+create or replace function public.accept_invite(p_token text)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  perform public.claim_invite(p_token, (select auth.uid()), (select email from auth.users where id = (select auth.uid())));
+end;
+$$;
+
+revoke execute on function public.accept_invite(text) from public, anon;
+grant execute on function public.accept_invite(text) to authenticated;
+
+-- Row Level Security: a signed-in user only ever sees their own restaurant's data.
 alter table public.restaurants enable row level security;
 
 drop policy if exists "Owners can view their restaurant" on public.restaurants;
-create policy "Owners can view their restaurant"
+drop policy if exists "Team can view their restaurant" on public.restaurants;
+create policy "Team can view their restaurant"
   on public.restaurants for select
   to authenticated
-  using ((select auth.uid()) = owner_id);
+  using (id in (select public.my_restaurants()));
 
 drop policy if exists "Owners can update their restaurant" on public.restaurants;
 create policy "Owners can update their restaurant"
@@ -49,6 +188,14 @@ as $$
 declare
   new_restaurant uuid;
 begin
+  -- Someone signing up through an invite joins that team instead of getting a
+  -- new restaurant. A bad or used invite cancels the sign-up.
+  if new.raw_user_meta_data ? 'invite_token' then
+    perform public.claim_invite(new.raw_user_meta_data ->> 'invite_token', new.id, new.email);
+    update auth.users set raw_user_meta_data = raw_user_meta_data - 'invite_token' where id = new.id;
+    return new;
+  end if;
+
   insert into public.restaurants (owner_id, name)
   values (
     new.id,
@@ -87,11 +234,16 @@ create table if not exists public.branches (
 alter table public.branches enable row level security;
 
 drop policy if exists "Owners manage their branches" on public.branches;
-create policy "Owners manage their branches"
-  on public.branches for all
-  to authenticated
-  using (restaurant_id in (select id from public.restaurants where owner_id = (select auth.uid())))
-  with check (restaurant_id in (select id from public.restaurants where owner_id = (select auth.uid())));
+drop policy if exists "Team can view branches" on public.branches;
+create policy "Team can view branches"
+  on public.branches for select to authenticated
+  using (restaurant_id in (select public.my_restaurants('admin', 'finance', 'sales', 'inventory', 'hr')));
+
+drop policy if exists "Team can change branches" on public.branches;
+create policy "Team can change branches"
+  on public.branches for all to authenticated
+  using (restaurant_id in (select public.my_restaurants('admin')))
+  with check (restaurant_id in (select public.my_restaurants('admin')));
 
 -- ---------------------------------------------------------------------------
 -- Sales (stage 2)
@@ -123,11 +275,16 @@ create index if not exists sales_branch_sold_at_idx on public.sales (branch_id, 
 alter table public.sales enable row level security;
 
 drop policy if exists "Owners manage their sales" on public.sales;
-create policy "Owners manage their sales"
-  on public.sales for all
-  to authenticated
-  using (restaurant_id in (select id from public.restaurants where owner_id = (select auth.uid())))
-  with check (restaurant_id in (select id from public.restaurants where owner_id = (select auth.uid())));
+drop policy if exists "Team can view sales" on public.sales;
+create policy "Team can view sales"
+  on public.sales for select to authenticated
+  using (restaurant_id in (select public.my_restaurants('admin', 'finance', 'sales')));
+
+drop policy if exists "Team can change sales" on public.sales;
+create policy "Team can change sales"
+  on public.sales for all to authenticated
+  using (restaurant_id in (select public.my_restaurants('admin', 'sales')))
+  with check (restaurant_id in (select public.my_restaurants('admin', 'sales')));
 
 -- ---------------------------------------------------------------------------
 -- sales_dashboard(): every figure the Sales page needs, in one call.
@@ -281,11 +438,16 @@ create index if not exists inventory_items_restaurant_idx on public.inventory_it
 alter table public.inventory_items enable row level security;
 
 drop policy if exists "Owners manage their inventory" on public.inventory_items;
-create policy "Owners manage their inventory"
-  on public.inventory_items for all
-  to authenticated
-  using (restaurant_id in (select id from public.restaurants where owner_id = (select auth.uid())))
-  with check (restaurant_id in (select id from public.restaurants where owner_id = (select auth.uid())));
+drop policy if exists "Team can view inventory" on public.inventory_items;
+create policy "Team can view inventory"
+  on public.inventory_items for select to authenticated
+  using (restaurant_id in (select public.my_restaurants('admin', 'finance', 'inventory')));
+
+drop policy if exists "Team can change inventory" on public.inventory_items;
+create policy "Team can change inventory"
+  on public.inventory_items for all to authenticated
+  using (restaurant_id in (select public.my_restaurants('admin', 'inventory')))
+  with check (restaurant_id in (select public.my_restaurants('admin', 'inventory')));
 
 -- ---------------------------------------------------------------------------
 -- Expenses (stage 4)
@@ -313,11 +475,21 @@ create index if not exists expenses_restaurant_spent_on_idx on public.expenses (
 alter table public.expenses enable row level security;
 
 drop policy if exists "Owners manage their expenses" on public.expenses;
-create policy "Owners manage their expenses"
-  on public.expenses for all
-  to authenticated
-  using (restaurant_id in (select id from public.restaurants where owner_id = (select auth.uid())))
-  with check (restaurant_id in (select id from public.restaurants where owner_id = (select auth.uid())));
+drop policy if exists "Team can view expenses" on public.expenses;
+create policy "Team can view expenses"
+  on public.expenses for select to authenticated
+  using (restaurant_id in (select public.my_restaurants('admin', 'finance')));
+
+drop policy if exists "Team can change expenses" on public.expenses;
+create policy "Team can change expenses"
+  on public.expenses for all to authenticated
+  using (restaurant_id in (select public.my_restaurants('admin', 'finance')))
+  with check (restaurant_id in (select public.my_restaurants('admin', 'finance')));
+
+drop policy if exists "HR can view wages" on public.expenses;
+create policy "HR can view wages"
+  on public.expenses for select to authenticated
+  using (category = 'wages' and restaurant_id in (select public.my_restaurants('hr')));
 
 -- ---------------------------------------------------------------------------
 -- CSV imports (stage 5)
@@ -337,11 +509,15 @@ create table if not exists public.imports (
 alter table public.imports enable row level security;
 
 drop policy if exists "Owners manage their imports" on public.imports;
-create policy "Owners manage their imports"
-  on public.imports for all
-  to authenticated
-  using (restaurant_id in (select id from public.restaurants where owner_id = (select auth.uid())))
-  with check (restaurant_id in (select id from public.restaurants where owner_id = (select auth.uid())));
+drop policy if exists "Team manages imports by type" on public.imports;
+create policy "Team manages imports by type"
+  on public.imports for all to authenticated
+  using (restaurant_id in (select public.my_restaurants('admin'))
+    or (kind = 'sales' and restaurant_id in (select public.my_restaurants('sales')))
+    or (kind = 'expenses' and restaurant_id in (select public.my_restaurants('finance'))))
+  with check (restaurant_id in (select public.my_restaurants('admin'))
+    or (kind = 'sales' and restaurant_id in (select public.my_restaurants('sales')))
+    or (kind = 'expenses' and restaurant_id in (select public.my_restaurants('finance'))));
 
 -- Link sales and expenses to the import that created them (empty for rows
 -- added by hand or by the demo script). The import must belong to the same restaurant.
@@ -542,8 +718,86 @@ create table if not exists public.recipe_lines (
 alter table public.recipe_lines enable row level security;
 
 drop policy if exists "Owners manage their recipes" on public.recipe_lines;
-create policy "Owners manage their recipes"
-  on public.recipe_lines for all
-  to authenticated
-  using (restaurant_id in (select id from public.restaurants where owner_id = (select auth.uid())))
-  with check (restaurant_id in (select id from public.restaurants where owner_id = (select auth.uid())));
+drop policy if exists "Team can view recipes" on public.recipe_lines;
+create policy "Team can view recipes"
+  on public.recipe_lines for select to authenticated
+  using (restaurant_id in (select public.my_restaurants('admin', 'finance', 'inventory')));
+
+drop policy if exists "Team can change recipes" on public.recipe_lines;
+create policy "Team can change recipes"
+  on public.recipe_lines for all to authenticated
+  using (restaurant_id in (select public.my_restaurants('admin', 'inventory')))
+  with check (restaurant_id in (select public.my_restaurants('admin', 'inventory')));
+
+-- ---------------------------------------------------------------------------
+-- Sign-in lock: one minute after every 5 wrong passwords for the same email.
+-- Row Level Security with no policies, and these functions are only open to the
+-- server's secret key, so counters can't be read or reset from a browser.
+-- ---------------------------------------------------------------------------
+create table if not exists public.login_attempts (
+  email_hash   text primary key,
+  failures     integer not null default 0,
+  locked_until timestamptz,
+  updated_at   timestamptz not null default now()
+);
+
+alter table public.login_attempts enable row level security;
+revoke all on table public.login_attempts from public, anon, authenticated;
+
+create or replace function public.login_lock_seconds(p_key text)
+returns integer
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select coalesce((
+    select ceil(extract(epoch from locked_until - now()))::integer
+    from public.login_attempts
+    where email_hash = p_key and locked_until > now()
+  ), 0);
+$$;
+
+create or replace function public.record_login_failure(p_key text)
+returns integer
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_failures integer;
+begin
+  -- Mistakes older than a day don't count towards the next lock.
+  insert into public.login_attempts as a (email_hash, failures, updated_at)
+  values (p_key, 1, now())
+  on conflict (email_hash) do update
+    set failures = case when a.updated_at < now() - interval '1 day' then 1 else a.failures + 1 end,
+        updated_at = now()
+  returning a.failures into v_failures;
+
+  if v_failures >= 5 then
+    update public.login_attempts
+      set failures = 0, locked_until = now() + interval '1 minute'
+      where email_hash = p_key;
+    return 60;
+  end if;
+  return 0;
+end;
+$$;
+
+create or replace function public.clear_login_failures(p_key text)
+returns integer
+language sql
+security definer
+set search_path = ''
+as $$
+  delete from public.login_attempts where email_hash = p_key;
+  select 0;
+$$;
+
+revoke execute on function public.login_lock_seconds(text) from public, anon, authenticated;
+revoke execute on function public.record_login_failure(text) from public, anon, authenticated;
+revoke execute on function public.clear_login_failures(text) from public, anon, authenticated;
+grant execute on function public.login_lock_seconds(text) to service_role;
+grant execute on function public.record_login_failure(text) to service_role;
+grant execute on function public.clear_login_failures(text) to service_role;

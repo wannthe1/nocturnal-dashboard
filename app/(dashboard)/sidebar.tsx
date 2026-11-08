@@ -8,6 +8,7 @@ import { LinkLabel } from "@/components/link-label";
 import { Logo } from "@/components/logo";
 import { useI18n } from "@/lib/i18n/client";
 import { SIDEBAR_KEY } from "@/lib/i18n/config";
+import { can, type Role } from "@/lib/roles";
 import { NAV_ITEMS, isActive } from "./nav-items";
 
 export const OPEN_MENU_EVENT = "nt-open-menu";
@@ -52,7 +53,7 @@ function CollapseButton() {
   );
 }
 
-export function Sidebar() {
+export function Sidebar({ role }: { role: Role }) {
   const { t } = useI18n();
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
@@ -88,7 +89,7 @@ export function Sidebar() {
         </div>
 
         <nav className="flex-1 space-y-1 px-3" aria-label={t("nav.main")}>
-          {NAV_ITEMS.map((item) => {
+          {NAV_ITEMS.filter((item) => can(role, item.area)).map((item) => {
             const active = isActive(item.href, pathname);
             const Icon = item.icon;
             return (

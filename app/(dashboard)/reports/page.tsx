@@ -5,7 +5,7 @@ import { Panel } from "@/components/panel";
 import { PeriodFilter } from "@/components/period-filter";
 import { ReportSkeleton } from "@/components/skeletons";
 import { StatTile } from "@/components/stat-tile";
-import { getCurrentUser } from "@/lib/auth";
+import { requireAccess } from "@/lib/auth";
 import { METRIC_COLORS, expenseColor } from "@/lib/chart-colors";
 import { formatMoney, formatMoneyExact, formatMonth, formatNumber, formatRange, NO_DATA } from "@/lib/format";
 import { labelFor, type Locale, type Translate } from "@/lib/i18n/config";
@@ -37,7 +37,7 @@ async function ReportContent({ searchParams }: { searchParams: PageProps<"/repor
   const branchId = readBranchId(params.branch);
   const [{ t, locale }, { restaurant }, branches, report, earlier] = await Promise.all([
     getI18n(),
-    getCurrentUser(),
+    requireAccess("reports"),
     getBranches(),
     getMonthlyReport(period, branchId),
     getMonthlyReport({ ...period, from: period.previousFrom, to: period.previousTo }, branchId),

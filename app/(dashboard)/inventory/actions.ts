@@ -6,6 +6,7 @@ import { getVerifiedUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { UNITS } from "@/lib/inventory-shared";
 import { getI18n } from "@/lib/i18n/server";
+import { can } from "@/lib/roles";
 
 // `values` sends back what was typed so the form can refill itself after an error.
 export type ItemFormState = { error?: string; values?: Record<string, string> };
@@ -26,8 +27,9 @@ export async function saveItem(_prev: ItemFormState, formData: FormData): Promis
 }
 
 async function validateAndSave(formData: FormData): Promise<ItemFormState> {
-  const [{ restaurant }, { t }] = await Promise.all([getVerifiedUser(), getI18n()]);
+  const [{ restaurant, role }, { t }] = await Promise.all([getVerifiedUser(), getI18n()]);
   if (!restaurant) return { error: t("action.noRestaurant") };
+  if (!can(role, "editInventory")) return { error: t("action.noPermission") };
 
   const id = String(formData.get("id") ?? "") || null;
   const name = String(formData.get("name") ?? "").trim();
@@ -76,7 +78,8 @@ async function validateAndSave(formData: FormData): Promise<ItemFormState> {
 }
 
 export async function deleteItem(id: string) {
-  await getVerifiedUser();
+  const { role } = await getVerifiedUser();
+  if (!can(role, "editInventory")) return;
   const supabase = await createClient();
   await supabase.from("inventory_items").delete().eq("id", id);
   revalidatePath("/", "layout");

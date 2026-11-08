@@ -1,8 +1,8 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { Field } from "@/components/form-field";
-import { EyeIcon, EyeOffIcon } from "@/components/icons";
+import { PasswordInput } from "@/components/password-input";
 import { useI18n } from "@/lib/i18n/client";
 import { signIn, signUp, type AuthState } from "./actions";
 
@@ -10,12 +10,27 @@ export function LoginForm() {
   const { t } = useI18n();
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const isSignUp = mode === "signup";
-  const [showPassword, setShowPassword] = useState(false);
 
   const [signInState, signInAction, signingIn] = useActionState<AuthState, FormData>(signIn, {});
   const [signUpState, signUpAction, signingUp] = useActionState<AuthState, FormData>(signUp, {});
   const state = isSignUp ? signUpState : signInState;
   const pending = isSignUp ? signingUp : signingIn;
+
+  // Counts down while sign-in is locked after too many wrong passwords.
+  const lockedUntil = state.lockedUntil ?? 0;
+  const [now, setNow] = useState(0);
+  useEffect(() => {
+    if (!lockedUntil) return;
+    const tick = () => setNow(Date.now());
+    const first = setTimeout(tick, 0);
+    const timer = setInterval(tick, 250);
+    return () => {
+      clearTimeout(first);
+      clearInterval(timer);
+    };
+  }, [lockedUntil]);
+  const secondsLeft = lockedUntil && now ? Math.max(0, Math.ceil((lockedUntil - now) / 1000)) : 0;
+  const locked = secondsLeft > 0;
 
   return (
     <div className="w-full">
@@ -32,26 +47,15 @@ export function LoginForm() {
           <input id="email" name="email" type="email" required autoComplete="email" defaultValue={state.values?.email} placeholder="you@restaurant.com" className="field" />
         </Field>
         <Field label={t("login.password")} htmlFor="password">
-          <div className="relative">
-            <input id="password" name="password" type={showPassword ? "text" : "password"} required minLength={isSignUp ? 8 : undefined} autoComplete={isSignUp ? "new-password" : "current-password"} className="field pe-11" />
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              aria-pressed={showPassword}
-              aria-label={t(showPassword ? "login.hidePassword" : "login.showPassword")}
-              title={t(showPassword ? "login.hidePassword" : "login.showPassword")}
-              className="absolute inset-y-0 end-0 grid w-11 place-items-center rounded-e-xl text-faint transition-colors hover:text-ink"
-            >
-              {showPassword ? <EyeOffIcon /> : <EyeIcon />}
-            </button>
-          </div>
+          <PasswordInput id="password" name="password" minLength={isSignUp ? 8 : undefined} autoComplete={isSignUp ? "new-password" : "current-password"} />
         </Field>
 
         {state.error && <p role="alert" className="text-sm text-danger">{state.error}</p>}
+        {locked && <p role="alert" className="text-sm tabular-nums text-danger">{t("login.err.locked", { seconds: secondsLeft })}</p>}
         {state.message && <p role="status" className="text-sm text-accent-text">{state.message}</p>}
 
-        <button type="submit" disabled={pending} className="btn btn-primary w-full !py-2.5">
-          {pending ? t("login.wait") : isSignUp ? t("login.create") : t("login.signIn")}
+        <button type="submit" disabled={pending || locked} className="btn btn-primary w-full !py-2.5 tabular-nums">
+          {pending ? t("login.wait") : locked ? `${secondsLeft}s` : isSignUp ? t("login.create") : t("login.signIn")}
         </button>
       </form>
 
