@@ -516,6 +516,18 @@ export const en = {
   "perm.expensesOnly": "Expenses only",
   "perm.none": "No access",
 
+  "overview.welcomeNamed": "Welcome back, {name}",
+  "name.label": "Preferred name",
+  "name.placeholder": "Your first name or nickname",
+  "name.err": "Enter your preferred name.",
+
+  "name.promptTitle": "Welcome to Nocturnal Tech",
+  "name.promptBody": "Please enter the name you would like us to use.",
+  "name.continue": "Continue",
+
+  "name.change": "Change name",
+  "name.editBody": "This name appears in your welcome message.",
+
   "notFound.title": "This page doesn't exist",
   "notFound.body": "The link may be out of date, or the item it pointed to may have been deleted.",
   "notFound.home": "Go to the dashboard",

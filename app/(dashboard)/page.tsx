@@ -37,7 +37,7 @@ async function Overview({ searchParams }: { searchParams: PageProps<"/">["search
   const params = await searchParams;
   const period = await readPeriod(params, DASHBOARD_PRESETS, "30d");
   const branchId = readBranchId(params.branch);
-  const [{ t, locale }, { restaurant }, branches, sales, expenses, series, stock] = await Promise.all([
+  const [{ t, locale }, { restaurant, name }, branches, sales, expenses, series, stock] = await Promise.all([
     getI18n(),
     requireAccess("overview"),
     getBranches(),
@@ -72,7 +72,7 @@ async function Overview({ searchParams }: { searchParams: PageProps<"/">["search
   return (
     <div className="space-y-8">
       <BrandBanner
-        eyebrow={t("overview.welcome")}
+        eyebrow={name ? t("overview.welcomeNamed", { name }) : t("overview.welcome")}
         title={restaurant?.name ?? t("account.myRestaurant")}
         line={hasSales ? t("overview.bannerLine", { revenue: money(revenue), orders: formatNumber(sales.current.orders) }) : t("common.noSales")}
       />

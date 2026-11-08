@@ -516,6 +516,18 @@ export const my: Messages = {
   "perm.expensesOnly": "အသုံးစရိတ်သာ",
   "perm.none": "ဝင်ခွင့်မရှိ",
 
+  "overview.welcomeNamed": "ပြန်လည်ကြိုဆိုပါသည်၊ {name}",
+  "name.label": "ခေါ်ဝေါ်လိုသောအမည်",
+  "name.placeholder": "သင့်အမည် သို့မဟုတ် အမည်ပြောင်",
+  "name.err": "ခေါ်ဝေါ်လိုသောအမည် ထည့်ပါ။",
+
+  "name.promptTitle": "Nocturnal Tech မှ ကြိုဆိုပါသည်",
+  "name.promptBody": "ကျွန်ုပ်တို့ ခေါ်ဝေါ်စေလိုသော အမည်ကို ထည့်ပါ။",
+  "name.continue": "ဆက်လုပ်ရန်",
+
+  "name.change": "အမည် ပြောင်းရန်",
+  "name.editBody": "ဤအမည်ကို ကြိုဆိုစာတွင် ပြသပါမည်။",
+
   "notFound.title": "ဤစာမျက်နှာ မရှိပါ",
   "notFound.body": "လင့်ခ် သက်တမ်းကုန်သွားခြင်း သို့မဟုတ် ညွှန်းထားသည့်အရာ ဖျက်ခံရခြင်း ဖြစ်နိုင်သည်။",
   "notFound.home": "ဒက်ရှ်ဘုတ်သို့ သွားရန်",

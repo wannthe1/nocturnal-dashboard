@@ -516,6 +516,18 @@ export const th: Messages = {
   "perm.expensesOnly": "ค่าใช้จ่ายเท่านั้น",
   "perm.none": "ไม่มีสิทธิ์เข้าถึง",
 
+  "overview.welcomeNamed": "ยินดีต้อนรับกลับ {name}",
+  "name.label": "ชื่อที่ต้องการให้เรียก",
+  "name.placeholder": "ชื่อจริงหรือชื่อเล่น",
+  "name.err": "กรุณากรอกชื่อที่ต้องการให้เรียก",
+
+  "name.promptTitle": "ยินดีต้อนรับสู่ Nocturnal Tech",
+  "name.promptBody": "กรุณากรอกชื่อที่ต้องการให้เราเรียก",
+  "name.continue": "ดำเนินการต่อ",
+
+  "name.change": "เปลี่ยนชื่อ",
+  "name.editBody": "ชื่อนี้จะแสดงในข้อความต้อนรับ",
+
   "notFound.title": "ไม่พบหน้านี้",
   "notFound.body": "ลิงก์อาจหมดอายุ หรือรายการที่ลิงก์ไปถึงอาจถูกลบแล้ว",
   "notFound.home": "ไปที่แดชบอร์ด",

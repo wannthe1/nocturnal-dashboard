@@ -26,6 +26,7 @@ export const ChevronDownIcon = (p: Props) => <Icon {...p}><path d="m6 9.500 6 6 
 export const SearchIcon = (p: Props) => <Icon {...p}><circle cx="11" cy="11" r="6.500" /><path d="m20 20-4.200-4.200" /></Icon>;
 export const RefreshIcon = (p: Props) => <Icon {...p}><path d="M19.500 12a7.500 7.500 0 1 1-2.200-5.300L19.500 9" /><path d="M19.500 4.500V9H15" /></Icon>;
 export const ArrowUpRightIcon = (p: Props) => <Icon {...p}><path d="M7.500 16.500 16.500 7.500" /><path d="M9 7.500h7.500V15" /></Icon>;
+export const PencilIcon = (p: Props) => <Icon {...p}><path d="M4 20h4L19 9a2.100 2.100 0 0 0-3-3L5 17v3z" /><path d="m14.500 7.500 3 3" /></Icon>;
 export const LogOutIcon = (p: Props) => <Icon {...p}><path d="M14 4H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h7" /><path d="M10.500 12H20" /><path d="m17 9 3 3-3 3" /></Icon>;
 export const MenuIcon = (p: Props) => <Icon {...p}><path d="M4 7.500h16M4 12h16M4 16.500h16" /></Icon>;
 export const CloseIcon = (p: Props) => <Icon {...p}><path d="m6 6 12 12M18 6 6 18" /></Icon>;

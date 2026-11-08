@@ -20,7 +20,9 @@ async function readClaims() {
   cacheLife(LIVE_DATA);
   const supabase = await createClient();
   const { data } = await supabase.auth.getClaims();
-  return data?.claims ? { id: data.claims.sub as string, email: (data.claims.email as string | undefined) ?? "" } : null;
+  if (!data?.claims) return null;
+  const { sub, email, user_metadata: metadata } = data.claims;
+  return { id: sub as string, email: (email as string | undefined) ?? "", name: (metadata?.display_name as string | undefined) ?? "" };
 }
 
 // The person's restaurant and role. Row Level Security only ever returns their own.
@@ -49,8 +51,8 @@ export const requireUser = cache(async () => {
 // The signed-in user with their restaurant and role, for pages. `cache` makes
 // repeat calls during the same request reuse the first result.
 export const getCurrentUser = cache(async () => {
-  const { id, email } = await requireUser();
-  return { id, email, ...(await readAccess(id)) };
+  const { id, email, name } = await requireUser();
+  return { id, email, name, ...(await readAccess(id)) };
 });
 
 // For pages: sends anyone whose role doesn't include this area to their own home page.

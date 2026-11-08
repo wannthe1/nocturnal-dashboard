@@ -516,6 +516,18 @@ export const zh: Messages = {
   "perm.expensesOnly": "仅支出",
   "perm.none": "无权限",
 
+  "overview.welcomeNamed": "欢迎回来，{name}",
+  "name.label": "称呼",
+  "name.placeholder": "您的名字或昵称",
+  "name.err": "请输入您的称呼。",
+
+  "name.promptTitle": "欢迎使用 Nocturnal Tech",
+  "name.promptBody": "请输入您希望我们使用的称呼。",
+  "name.continue": "继续",
+
+  "name.change": "更改称呼",
+  "name.editBody": "此称呼将显示在欢迎信息中。",
+
   "notFound.title": "此页面不存在",
   "notFound.body": "链接可能已过期，或其指向的内容已被删除。",
   "notFound.home": "返回仪表板",
