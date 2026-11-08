@@ -1,5 +1,7 @@
 "use client";
 
+import { createPortal, useFormStatus } from "react-dom";
+import { LoginScreen } from "@/app/login/login-screen";
 import { LogOutIcon } from "@/components/icons";
 import { LogoMark } from "@/components/logo";
 import { usePopover } from "@/components/use-popover";
@@ -44,13 +46,25 @@ export function AccountMenu({
           </div>
           <div className="my-1 h-px bg-line" />
           <form action={signOut}>
-            <button type="submit" role="menuitem" className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm text-muted transition-colors hover:bg-accent-soft hover:text-ink">
-              <LogOutIcon />
-              {t("account.signOut")}
-            </button>
+            <SignOutButton label={t("account.signOut")} />
           </form>
         </div>
       )}
     </div>
+  );
+}
+
+// Shows the sign-in screen the moment it's pressed, while the sign-out finishes
+// behind it. If the sign-out fails, the screen goes away and they stay signed in.
+function SignOutButton({ label }: { label: string }) {
+  const { pending } = useFormStatus();
+  return (
+    <>
+      <button type="submit" role="menuitem" className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm text-muted transition-colors hover:bg-accent-soft hover:text-ink">
+        <LogOutIcon />
+        {label}
+      </button>
+      {pending && createPortal(<div inert className="fixed inset-0 z-[100] overflow-y-auto bg-canvas"><LoginScreen /></div>, document.body)}
+    </>
   );
 }

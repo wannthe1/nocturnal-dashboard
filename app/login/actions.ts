@@ -1,8 +1,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { headers } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { after } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { clearFailures, lockSeconds, loginKey, recordFailure } from "@/lib/login-guard";
 import { getI18n } from "@/lib/i18n/server";
@@ -90,7 +91,15 @@ export async function signUp(_prev: AuthState, formData: FormData): Promise<Auth
 
 export async function signOut() {
   const supabase = await createClient();
-  await supabase.auth.signOut();
+  const { data } = await supabase.auth.getSession();
+
+  // The browser is signed out as soon as these are gone, so nobody waits for
+  // Supabase. It's told to end the session once the response has been sent.
+  const cookieStore = await cookies();
+  cookieStore.getAll().filter((c) => c.name.startsWith("sb-")).forEach((c) => cookieStore.delete(c.name));
+  const token = data.session?.access_token;
+  if (token) after(() => supabase.auth.admin.signOut(token));
+
   revalidatePath("/", "layout"); // forget this account's pages in the browser
   redirect("/login");
 }
