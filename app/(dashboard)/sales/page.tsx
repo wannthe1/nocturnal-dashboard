@@ -66,7 +66,7 @@ async function SalesContent({ searchParams }: { searchParams: PageProps<"/sales"
         </Panel>
       ) : (
         <>
-          <section aria-label={t("common.keyFigures")} className="stagger grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <section aria-label={t("common.keyFigures")} className="stagger kpi-grid">
             <StatTile hero label={t("common.revenue")} window={window} value={hasSales ? money(current.revenue) : NO_DATA} exact={exact(current.revenue)} current={current.revenue} previous={prev?.revenue} compareLabel={compareLabel} format={money} spark={revenueBins} sparkColor={METRIC_COLORS.revenue} />
             <StatTile label={t("common.orders")} window={window} value={hasSales ? formatNumber(current.orders) : NO_DATA} current={current.orders} previous={prev?.orders} compareLabel={compareLabel} spark={orderBins} sparkColor={METRIC_COLORS.orders} />
             <StatTile label={t("sales.avgOrder")} window={window} value={hasSales ? formatMoneyExact(avgOrder, currency) : NO_DATA} current={avgOrder} previous={prev?.avg} compareLabel={compareLabel} format={exact} spark={avgBins} sparkColor={METRIC_COLORS.revenue} />

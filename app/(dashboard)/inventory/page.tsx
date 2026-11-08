@@ -103,7 +103,7 @@ async function InventoryContent({ searchParams }: { searchParams: PageProps<"/in
 
   return (
     <div className="space-y-8">
-      <section aria-label={t("common.keyFigures")} className="stagger grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <section aria-label={t("common.keyFigures")} className="stagger kpi-grid">
         <StatTile hero label={t("inventory.lowStock")} window={rightNow} value={items.length ? formatNumber(counts.low) : NO_DATA} note={items.length ? `${t("inventory.ratio", { count: counts.low, total: items.length })} · ${t("inventory.lowNote")}` : t("inventory.lowNote")} />
         <StatTile label={t("inventory.outOfStock")} window={rightNow} value={items.length ? formatNumber(counts.out) : NO_DATA} note={items.length ? t("inventory.ratio", { count: counts.out, total: items.length }) : t("inventory.outNote")} />
         <StatTile label={t("inventory.value")} window={rightNow} value={items.length ? formatMoney(stockValue, currency) : NO_DATA} exact={formatMoneyExact(stockValue, currency)} note={t("inventory.valueNote")} />

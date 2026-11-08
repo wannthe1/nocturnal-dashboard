@@ -80,7 +80,7 @@ async function Overview({ searchParams }: { searchParams: PageProps<"/">["search
       <PeriodFilter basePath="/" presets={DASHBOARD_PRESETS} period={period} branch={branch} branches={branches} />
 
       {/* The main decision first: are we making money? */}
-      <section aria-label={t("common.keyFigures")} className="stagger grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <section aria-label={t("common.keyFigures")} className="stagger kpi-grid">
         <StatTile
           hero
           label={t("common.profit")}

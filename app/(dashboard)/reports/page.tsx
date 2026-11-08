@@ -106,7 +106,7 @@ async function ReportContent({ searchParams }: { searchParams: PageProps<"/repor
     <div className="space-y-8">
       <PeriodFilter basePath="/reports" presets={REPORT_PRESETS} period={period} branch={branch} branches={branches} />
 
-      <section aria-label={t("common.keyFigures")} className="stagger grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <section aria-label={t("common.keyFigures")} className="stagger kpi-grid">
         <StatTile hero label={t("common.profit")} window={window} value={hasData ? money(totalProfit) : NO_DATA} exact={exact(totalProfit)} current={totalProfit} previous={canCompare && previousProfit > 0 ? previousProfit : undefined} compareLabel={compareLabel} format={money} note={totalProfit < 0 ? t("reports.loss") : t("overview.profitNote")} spark={rows.map((r) => r.profit)} sparkColor={METRIC_COLORS.profit} />
         <StatTile label={t("common.margin")} window={window} value={totalMargin === null ? NO_DATA : `${totalMargin.toFixed(1)}%`} note={totalMargin === null ? t("expenses.marginNote") : `${money(totalProfit)} / ${money(totals.revenue)}`} spark={rows.map((r) => r.margin ?? 0)} sparkColor={METRIC_COLORS.profit} />
         <StatTile label={t("common.revenue")} window={window} value={totals.revenue ? money(totals.revenue) : NO_DATA} exact={exact(totals.revenue)} current={totals.revenue} previous={canCompare ? previous.revenue : undefined} compareLabel={compareLabel} format={money} note={t("chart.orders", { count: formatNumber(totals.orders) })} spark={rows.map((r) => r.revenue)} sparkColor={METRIC_COLORS.revenue} />

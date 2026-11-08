@@ -144,7 +144,7 @@ async function SalesForecast({ shared, sales, history, branchId }: { shared: Sha
 
   return (
     <>
-      <section aria-label={t("common.keyFigures")} className="stagger grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <section aria-label={t("common.keyFigures")} className="stagger kpi-grid">
         <StatTile hero label={t("forecast.expectedProfit")} window={window} value={profit === null ? NO_DATA : `≈ ${money(profit)}`} exact={profit === null ? undefined : exact(profit)} current={profit ?? undefined} previous={recentProfit !== null && recentProfit > 0 ? recentProfit : undefined} format={money} compareLabel={compare} note={t("overview.profitNote")} />
         <StatTile label={t("forecast.expectedRevenue")} window={window} value={revenue ? `≈ ${money(revenue.total)}` : NO_DATA} exact={revenue ? exact(revenue.total) : undefined} current={revenue?.total} previous={recentRevenue || undefined} format={money} compareLabel={revenue ? `${compare} · ${range(revenue.totalLow, revenue.totalHigh, money)}` : compare} note={t("forecast.notEnough")} />
         <StatTile label={t("forecast.expectedCosts")} window={window} value={costs === null ? NO_DATA : `≈ ${money(costs)}`} exact={costs === null ? undefined : exact(costs)} current={costs ?? undefined} previous={recentCosts || undefined} format={money} upIsGood={false} compareLabel={compare} note={t("forecast.costNote")} />
@@ -217,7 +217,7 @@ async function DemandForecast({ shared, sales, from, to, branchId }: { shared: S
 
   return (
     <>
-      <section aria-label={t("common.keyFigures")} className="stagger grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <section aria-label={t("common.keyFigures")} className="stagger kpi-grid">
         <StatTile hero label={t("forecast.itemsExpected")} window={window} value={known.length ? `≈ ${formatNumber(totalItems)}` : NO_DATA} current={known.length ? totalItems : undefined} previous={recentItems || undefined} compareLabel={t("forecast.compare", { days: horizon })} note={t("forecast.notEnough")} />
         <StatTile label={t("forecast.topItem")} window={window} value={known[0]?.item ?? NO_DATA} note={known[0] ? `≈ ${formatNumber(known[0].projection!.total)} / ${formatNumber(totalItems)}` : t("forecast.notEnough")} />
         <StatTile label={t("forecast.expectedOrders")} window={window} value={orders ? `≈ ${formatNumber(orders.total)}` : NO_DATA} note={orders ? t("forecast.range", { low: formatNumber(orders.totalLow), high: formatNumber(orders.totalHigh) }) : t("forecast.notEnough")} />
@@ -308,7 +308,7 @@ async function InventoryForecast({ shared, from, to, branchId, branches }: { sha
 
   return (
     <>
-      <section aria-label={t("common.keyFigures")} className="stagger grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <section aria-label={t("common.keyFigures")} className="stagger kpi-grid">
         <StatTile hero label={t("forecast.runningOut")} window={rightWindow} value={has ? formatNumber(running) : NO_DATA} note={has ? t("inventory.ratio", { count: running, total: linked.length }) : t("forecast.empty.inventoryShort")} />
         <StatTile label={t("forecast.toReorder")} window={rightWindow} value={has ? formatNumber(toOrder) : NO_DATA} note={has ? t("inventory.ratio", { count: toOrder, total: linked.length }) : t("forecast.empty.inventoryShort")} />
         <StatTile label={t("forecast.orderCost")} window={rightWindow} value={has ? money(orderCost) : NO_DATA} exact={exact(orderCost)} note={t("forecast.orderCostNote")} />

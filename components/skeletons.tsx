@@ -26,13 +26,13 @@ const Card = ({ className, children }: { className: string; children: React.Reac
 
 function Stats({ spark = true }: { spark?: boolean }) {
   return (
-    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+    <div className="kpi-grid">
       {[0, 1, 2, 3].map((i) => (
-        <div key={i} className={`card overflow-hidden p-5 ${spark ? "h-48" : "h-[8.8rem]"}`}>
-          <Bone className="h-4 w-24" />
-          <Bone className="mt-1.5 h-3 w-32" />
-          <Bone className="mt-3 h-8 w-32" />
-          {spark && <Bone className="mt-5 h-10 w-full" />}
+        <div key={i} className={`card overflow-hidden p-5 max-sm:p-3 ${spark ? "sm:h-48" : "sm:h-[8.8rem]"} ${i === 0 ? "" : "max-sm:h-[5.75rem]"}`}>
+          <Bone className="h-4 w-20" />
+          <Bone className={`mt-1.5 h-3 w-24 ${i === 0 ? "" : "max-sm:hidden"}`} />
+          <Bone className="mt-3 h-7 w-24 max-sm:mt-2" />
+          {spark && <Bone className={`mt-5 h-10 w-full ${i === 0 ? "" : "max-sm:hidden"}`} />}
         </div>
       ))}
     </div>

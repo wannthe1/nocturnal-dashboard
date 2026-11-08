@@ -77,7 +77,7 @@ async function ExpensesContent({ searchParams }: { searchParams: PageProps<"/exp
         <Link href="/expenses/new" className="btn btn-primary h-10"><PlusIcon className="h-4 w-4" />{t("expenses.add")}</Link>
       </div>
 
-      <section aria-label={t("common.keyFigures")} className="stagger grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <section aria-label={t("common.keyFigures")} className="stagger kpi-grid">
         <StatTile hero label={t("common.expenses")} window={window} value={hasExpenses ? money(summary.total) : NO_DATA} exact={exact(summary.total)} current={summary.total} previous={summary.canCompare ? summary.previousTotal : undefined} compareLabel={compareLabel} format={money} upIsGood={false} spark={expenseBins} sparkColor={METRIC_COLORS.expenses} />
         <StatTile
           label={t("common.profit")}

@@ -29,24 +29,26 @@ export async function StatTile({ label, value, window, exact, current, previous,
   const good = change !== null && (change >= 0) === upIsGood;
   // Tiles with a trend line share one height; so do tiles without one.
   const height = spark === undefined ? "min-h-[8.8rem]" : "min-h-48";
+  // On phones the three cards beside the main one show just the label and figure.
+  const compactHidden = hero ? "" : "max-sm:hidden";
 
   return (
-    <div className={`card flex min-w-0 flex-col p-5 transition-transform duration-300 hover:-translate-y-0.5 ${height} ${hero ? "night hero-tile" : ""}`}>
+    <div className={`card relative flex min-w-0 flex-col transition-transform duration-300 hover:-translate-y-0.5 ${height} ${hero ? "night hero-tile p-5 max-sm:p-4" : "p-5 max-sm:min-h-0 max-sm:justify-center max-sm:p-3"}`}>
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <p className="text-sm font-medium text-muted">{label}</p>
-          <p className="text-xs text-faint">{window}</p>
+          <p className={`text-xs text-faint ${compactHidden}`}>{window}</p>
         </div>
         {href && (
-          <Link href={href} className="group inline-flex shrink-0 items-center gap-0.5 text-xs font-medium text-accent-text">
-            {t("common.viewDetails")}
+          <Link href={href} className={`group inline-flex shrink-0 items-center gap-0.5 text-xs font-medium text-accent-text ${hero ? "" : "max-sm:after:absolute max-sm:after:inset-0"}`}>
+            <span className="max-sm:sr-only">{t("common.viewDetails")}</span>
             <ArrowUpRightIcon className="h-3.5 w-3.5 transition-transform group-hover:-translate-y-px group-hover:translate-x-px" />
           </Link>
         )}
       </div>
 
-      <div className="mt-2.5 flex flex-wrap items-center gap-x-2.5 gap-y-1">
-        <p title={exact} className="text-[1.75rem] font-semibold leading-tight tabular-nums text-ink">{value}</p>
+      <div className={`flex flex-wrap items-center gap-x-2.5 gap-y-1 ${hero ? "mt-2.5" : "mt-2.5 max-sm:mt-1"}`}>
+        <p title={exact} className={`min-w-0 break-words text-[1.75rem] font-semibold leading-tight tabular-nums text-ink ${hero ? "max-sm:text-2xl" : "max-sm:text-lg"}`}>{value}</p>
         {change !== null && (
           <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold tabular-nums ${good ? "bg-success/12 text-success" : "bg-danger/12 text-danger"}`}>
             {change >= 0 ? <TrendUpIcon className="h-3.5 w-3.5" /> : <TrendDownIcon className="h-3.5 w-3.5" />}
@@ -55,10 +57,10 @@ export async function StatTile({ label, value, window, exact, current, previous,
         )}
       </div>
 
-      <p className="mt-1 text-xs tabular-nums text-faint">
+      <p className={`mt-1 text-xs tabular-nums text-faint ${compactHidden}`}>
         {change !== null ? <>{format(current!)} / {format(previous!)} · {compareLabel}</> : (note ?? t("common.noEarlier"))}
       </p>
-      {spark && spark.some(Boolean) && <Sparkline values={spark} color={sparkColor} className="mt-auto pt-3" />}
+      {spark && spark.some(Boolean) && <Sparkline values={spark} color={sparkColor} className={`mt-auto pt-3 ${compactHidden}`} />}
     </div>
   );
 }
