@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState, useSyncExternalStore } from "react";
-import { CloseIcon, MenuIcon, SidebarIcon } from "@/components/icons";
+import { MenuIcon, SidebarIcon } from "@/components/icons";
 import { LinkLabel } from "@/components/link-label";
 import { Logo } from "@/components/logo";
 import { useI18n } from "@/lib/i18n/client";
@@ -60,14 +60,21 @@ export function Sidebar() {
 
   useEffect(() => {
     const onOpen = () => setOpen(true);
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
     window.addEventListener(OPEN_MENU_EVENT, onOpen);
-    return () => window.removeEventListener(OPEN_MENU_EVENT, onOpen);
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener(OPEN_MENU_EVENT, onOpen);
+      window.removeEventListener("keydown", onKey);
+    };
   }, []);
 
   return (
     <>
-      {/* Dimmed background behind the phone menu. */}
-      <div onClick={close} aria-hidden="true" className={`fixed inset-0 z-40 bg-obsidian/60 backdrop-blur-sm transition-opacity duration-300 lg:hidden ${open ? "opacity-100" : "pointer-events-none opacity-0"}`} />
+      {/* Dimmed background behind the phone menu. Tapping it closes the menu. */}
+      <button type="button" onClick={close} aria-label={t("nav.close")} tabIndex={open ? 0 : -1} className={`fixed inset-0 z-40 bg-obsidian/60 backdrop-blur-sm transition-opacity duration-300 lg:hidden ${open ? "opacity-100" : "pointer-events-none opacity-0"}`} />
 
       <aside
         className={`fixed inset-y-0 start-0 z-50 flex w-64 flex-col bg-canvas transition-[transform,width] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] lg:sticky lg:top-0 lg:h-screen lg:w-60 lg:shrink-0 lg:translate-x-0 lg:collapsed:w-[4.5rem] ${
@@ -78,9 +85,6 @@ export function Sidebar() {
           <Link href="/" onClick={close} aria-label={t("nav.overview")} className="rounded-lg">
             <Logo collapsible />
           </Link>
-          <button type="button" onClick={close} aria-label={t("nav.close")} className="icon-btn !h-8 !w-8 lg:hidden">
-            <CloseIcon className="h-4 w-4" />
-          </button>
         </div>
 
         <nav className="flex-1 space-y-1 px-3" aria-label={t("nav.main")}>

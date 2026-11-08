@@ -460,6 +460,9 @@ export const zh: Messages = {
   "forecast.noDeliveries": "假设没有新到货",
   "forecast.outNow": "已用完",
 
+  "login.showPassword": "显示密码",
+  "login.hidePassword": "隐藏密码",
+
   "notFound.title": "此页面不存在",
   "notFound.body": "链接可能已过期，或其指向的内容已被删除。",
   "notFound.home": "返回仪表板",

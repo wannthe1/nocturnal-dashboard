@@ -460,6 +460,9 @@ export const my: Messages = {
   "forecast.noDeliveries": "ကုန်အသစ် မရောက်ဟု ယူဆထားသည်",
   "forecast.outNow": "ကုန်နေပြီ",
 
+  "login.showPassword": "စကားဝှက် ပြရန်",
+  "login.hidePassword": "စကားဝှက် ဖျောက်ရန်",
+
   "notFound.title": "ဤစာမျက်နှာ မရှိပါ",
   "notFound.body": "လင့်ခ် သက်တမ်းကုန်သွားခြင်း သို့မဟုတ် ညွှန်းထားသည့်အရာ ဖျက်ခံရခြင်း ဖြစ်နိုင်သည်။",
   "notFound.home": "ဒက်ရှ်ဘုတ်သို့ သွားရန်",

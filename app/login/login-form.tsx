@@ -2,6 +2,7 @@
 
 import { useActionState, useState } from "react";
 import { Field } from "@/components/form-field";
+import { EyeIcon, EyeOffIcon } from "@/components/icons";
 import { useI18n } from "@/lib/i18n/client";
 import { signIn, signUp, type AuthState } from "./actions";
 
@@ -9,6 +10,7 @@ export function LoginForm() {
   const { t } = useI18n();
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const isSignUp = mode === "signup";
+  const [showPassword, setShowPassword] = useState(false);
 
   const [signInState, signInAction, signingIn] = useActionState<AuthState, FormData>(signIn, {});
   const [signUpState, signUpAction, signingUp] = useActionState<AuthState, FormData>(signUp, {});
@@ -30,7 +32,19 @@ export function LoginForm() {
           <input id="email" name="email" type="email" required autoComplete="email" defaultValue={state.values?.email} placeholder="you@restaurant.com" className="field" />
         </Field>
         <Field label={t("login.password")} htmlFor="password">
-          <input id="password" name="password" type="password" required minLength={isSignUp ? 8 : undefined} autoComplete={isSignUp ? "new-password" : "current-password"} className="field" />
+          <div className="relative">
+            <input id="password" name="password" type={showPassword ? "text" : "password"} required minLength={isSignUp ? 8 : undefined} autoComplete={isSignUp ? "new-password" : "current-password"} className="field pe-11" />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              aria-pressed={showPassword}
+              aria-label={t(showPassword ? "login.hidePassword" : "login.showPassword")}
+              title={t(showPassword ? "login.hidePassword" : "login.showPassword")}
+              className="absolute inset-y-0 end-0 grid w-11 place-items-center rounded-e-xl text-faint transition-colors hover:text-ink"
+            >
+              {showPassword ? <EyeOffIcon /> : <EyeIcon />}
+            </button>
+          </div>
         </Field>
 
         {state.error && <p role="alert" className="text-sm text-danger">{state.error}</p>}

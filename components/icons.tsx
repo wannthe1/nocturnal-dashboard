@@ -35,4 +35,6 @@ export const TrendUpIcon = (p: Props) => <Icon {...p}><path d="m4 16 5.500-5.500
 export const TrendDownIcon = (p: Props) => <Icon {...p}><path d="m4 8 5.500 5.500 3.500-3.500L20 17" /><path d="M15 17h5v-5" /></Icon>;
 export const SidebarIcon = (p: Props) => <Icon {...p}><rect x="3.5" y="4.5" width="17" height="15" rx="3" /><path d="M9.5 4.5v15" /></Icon>;
 export const ForecastIcon = (p: Props) => <Icon {...p}><path d="M4 19h16" /><path d="M4 15.500 9 10l3 2.500 3.500-4" /><path d="M15.500 8.500 20 4" strokeDasharray="2 2.500" /></Icon>;
+export const EyeIcon = (p: Props) => <Icon {...p}><path d="M2.500 12S6 5.500 12 5.500 21.500 12 21.500 12 18 18.500 12 18.500 2.500 12 2.500 12Z" /><circle cx="12" cy="12" r="2.800" /></Icon>;
+export const EyeOffIcon = (p: Props) => <Icon {...p}><path d="M9.900 5.800A9 9 0 0 1 12 5.500c6 0 9.500 6.500 9.500 6.500a17 17 0 0 1-2.800 3.600" /><path d="M6.400 7.100A16.500 16.500 0 0 0 2.500 12S6 18.500 12 18.500a9.200 9.200 0 0 0 4.900-1.400" /><path d="M10 10a2.800 2.800 0 0 0 4 4" /><path d="m4 4 16 16" /></Icon>;
 export const FileIcon = (p: Props) => <Icon {...p}><path d="M7 3h7l5 5v11a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z" /><path d="M14 3v5h5" /></Icon>;

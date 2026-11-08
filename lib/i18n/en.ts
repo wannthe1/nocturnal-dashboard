@@ -460,6 +460,9 @@ export const en = {
   "forecast.noDeliveries": "Assumes no new deliveries",
   "forecast.outNow": "Already out",
 
+  "login.showPassword": "Show password",
+  "login.hidePassword": "Hide password",
+
   "notFound.title": "This page doesn't exist",
   "notFound.body": "The link may be out of date, or the item it pointed to may have been deleted.",
   "notFound.home": "Go to the dashboard",

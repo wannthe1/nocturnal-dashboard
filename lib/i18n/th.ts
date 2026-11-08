@@ -460,6 +460,9 @@ export const th: Messages = {
   "forecast.noDeliveries": "สมมติว่าไม่มีของเข้าใหม่",
   "forecast.outNow": "หมดแล้ว",
 
+  "login.showPassword": "แสดงรหัสผ่าน",
+  "login.hidePassword": "ซ่อนรหัสผ่าน",
+
   "notFound.title": "ไม่พบหน้านี้",
   "notFound.body": "ลิงก์อาจหมดอายุ หรือรายการที่ลิงก์ไปถึงอาจถูกลบแล้ว",
   "notFound.home": "ไปที่แดชบอร์ด",
