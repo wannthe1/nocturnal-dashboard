@@ -5,7 +5,7 @@ import { ClockIcon } from "@/components/icons";
 import { usePopover } from "@/components/use-popover";
 import { useI18n } from "@/lib/i18n/client";
 
-const HOURS = [12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
+const HOURS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
 const MINUTES = Array.from({ length: 60 }, (_, i) => i);
 const pad = (n: number) => String(n).padStart(2, "0");
 
